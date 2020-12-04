@@ -62,7 +62,7 @@ $(OBJMAIN): $(BREM_CASH)cash2003.h $(BREM_CASH)cash2.hpp $(BREM_CASH)mersenne.h 
 
 
 vibrio: $(OBJCASH) $(OBJCASH2) $(OBJMAIN) $(OBJVIB) $(OBJPOAS)
-	$(CPP) $(PPOPT)  $(OBJVIB) $(OBJCASH) $(OBJCASH2) $(OBJMAIN) $(OBJPOAS) -o SelfishRups \
+	$(CPP) $(PPOPT)  $(OBJVIB) $(OBJCASH) $(OBJCASH2) $(OBJMAIN) $(OBJPOAS) -o SelfishDNA \
 	  -lm  -lc -lpng -lz -lX11 -lgrace_np -lcurses
 
 .PHONY: vibrio.cpp
