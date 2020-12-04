@@ -1,0 +1,39 @@
+# INITIALISATION OPTIONS                     #Default pars              # Explanation
+initial_density                 0.001          #0.5
+init_nr_args                      0
+total_nr_args                    2	        #15                        # An initial genome has this many toxins and anti-toxins (don't have to match, selection will figure that out)
+init_mob                        0.1          #0.1                      # initial gene mobility
+init_nr_coregenes                6                                # MAX 64! Nr of core genes in the genomes. You need all (nr) or it is lethal.
+init_nr_noncoding                25
+fieldsize                       50          #250
+seed 				            56
+
+# BIRTH/DEATH AND FITNESS STUFF
+birth                           1.0          #1.0                      #
+birthNON                        5          #10                       # Chance that nobody reproduces ("claimempty")
+death                           0.05         #0.05                     #
+gene_cost                       0.02         #0.05/0.03                 # Gene costs for expressed genes (toxins, antitoxins,household)
+genome_size_cost                0.002                                  # Costs per pearl for total genome size [LS:so T, A, H  &N?]
+
+# MUTATION RATES
+mut_rate_scaling                1.0          #1.0
+gene_mob                        0.01             #0.01                      # mutation rate of gene mob
+gene_loss                       0.001           #0.001
+gene_dupl                       0.001		#0.001
+tandem_dupl                     0.0000
+tandem_del                      0.0000
+inversions                      0.0005          #0.0005
+gene_to_noncoding               0.001		#0.001
+noncoding_to_gene               0.00010	    #0.000005
+gene_discovery                  0.00010	    #0.000005
+
+# eDNA PLANE THINGS
+
+degr							0.01 										# DNA degradation   (Bremdefault = 0.1)
+diff						    2										# frequency diff per timestep (int) (Bremdefault =3)
+
+#DISPLAY THINGIES
+dodisplay                       1										# Boolean TRUE (1) or FALSE(0)
+displayinterval                 10
+summaryinterval                 100
+livegraphs                      0
