@@ -10,6 +10,10 @@ Toxin_Antitoxin.hh
 */
 Pearl::Pearl()
 {
+	gene_age_=0;
+	num_vertical_transfers_=0;
+    num_jumps_=0;
+	num_horizontal_transfers_=0;
 }
 
 Pearl::~Pearl()
@@ -18,4 +22,9 @@ Pearl::~Pearl()
 
 Pearl::Pearl(const Pearl &bd)
 {
+    type = bd.type;
+	gene_age_=bd.gene_age_;
+    num_jumps_=bd.num_jumps_;
+	num_vertical_transfers_=bd.num_vertical_transfers_;
+	num_horizontal_transfers_=bd.num_horizontal_transfers_;
 }

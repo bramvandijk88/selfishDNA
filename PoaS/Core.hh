@@ -9,9 +9,10 @@ class Core : public Pearl
 		int type;	// Number for coregene.. you need them ALLLLLLL >:)
 		double mobility;
 
-		int gene_age_;						// Telt bijv. 1000 tijdstappen
-		int num_horizontal_transfers_;		// Elke keer als HGT (reset after x time steps)
-		int num_vertical_transfers_;		// Elke keer als VGT
+		// int gene_age_;						// Time since this gene was born from a non-coding gene		
+		// int num_horizontal_transfer_;		// HGT counter (transposon jumps between cells)
+		// int num_vertical_transfers_;		// VGT counter
+		// int num_jumps_;						// Transposon jump counter (transposon jumps in a cell)
 
 		Core();  // constructor
 		virtual Pearl* clone() const;

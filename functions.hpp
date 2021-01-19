@@ -9,11 +9,11 @@
 extern int nrow;
 extern int ncol;
 extern string folder;
-
+extern float uptakerate;
 extern float birth, birthNON;
 extern float gene_loss, gene_dupl, tandem_dupl, tandem_del, inversions, gene_to_noncoding, noncoding_to_gene, mut_rate_scaling, ab_penalty, gene_mob, gene_discovery, init_mob;
 
-extern float gene_cost, genome_size_cost;
+extern float gene_cost, genome_size_cost, break_chance;
 
 extern int total_nr_args;
 extern vector<double> ABs_concentration;
@@ -162,7 +162,7 @@ void DoHGT(TYPE2 **vibrios, TYPE2** DNA, int total_nr_toxins)
  				{
 
 						//if(V)cout << "Local poolsize [" << row << "][" << col << "] " << DNA[row][col].DNA->Fragments->size() << endl;
-						if (genrand_real1() < 0.05) 																						//LS: fixed chance of uptake
+						if (genrand_real1() < uptakerate) 																						//LS: fixed chance of uptake
 						{
 							bool mutated = false;
 							stringstream old;
@@ -187,7 +187,7 @@ void DoHGT(TYPE2 **vibrios, TYPE2** DNA, int total_nr_toxins)
 								cout << "Fragment inserted:" << endl;
 								cout << vibrios[row][col].G->ListContent(&(*frits)) << endl; 
 							}								
-							if(transposase) mutated = vibrios[row][col].G->IntegrateDNA(*frits, total_nr_args, 0, frits->size()-1,true,true); 	
+							if(transposase) mutated = vibrios[row][col].G->IntegrateDNA(*frits, total_nr_args, 0, frits->size()-1,true,true,true,break_chance); 	
 							frag_new << vibrios[row][col].G->ListContent(&(*frits),FALSE,FALSE,TRUE) << endl;
 							//else cout << "Not integrating because no transposon" << endl;
 							if(V)cout << "Did it integrate? --> " << mutated << endl;
@@ -272,25 +272,23 @@ void CompeteAndReproduce(TYPE2 **vibrios, TYPE2 **e, int row, int col)
 			if(V) cout << "pinvade for competitor " << i << " is "  << pinvade << endl; 				// LS: the output is not the actual chance of invading for that individual, but the cumulative chance
 			if(rand <= pinvade)																																	// LS: sure that this cyan thing doesnt chance the properties of the parameter?
 			{
-					if(V) cout << "!! invaded !! " << competitor->val <<  endl;
-					
+					if(V) cout << "!! invaded !! " << competitor->val <<  endl;					
 					if(V) cout << "generation " << competitor->G->generation_ << endl;
 					vibrios[row][col].val = competitor->val;		// Inherit val (in this case, this is always 1?)
-					//environment[row][col].val2-=3;			// Extra bit of resource spent for this reproduction event
-					//environment[row][col].val2 = max(environment[row][col].val2,0);
 					// Copy genome to new individual
 					vibrios[row][col].G = new Genome();
 					vibrios[row][col].G->CloneGenome(competitor->G);
 					bool mutated = vibrios[row][col].G->MutateGenome(gene_mob, gene_loss, gene_dupl, tandem_dupl, tandem_del, inversions, gene_to_noncoding, noncoding_to_gene, gene_discovery); // LS: why ' mutated' in Genome.cc but 'mutate' here
 					if(V)cout << "1" << endl;
-					bool integrated = vibrios[row][col].G->TransposonDynamics();
-					if(integrated) 
-					{
-						vibrios[row][col].G->transformant = 2;	
-					}
+					// bool integrated = vibrios[row][col].G->TransposonDynamics();
+					// if(integrated) 
+					// {
+					// 	vibrios[row][col].G->transformant = 2;	
+					// }
 					//bool integrated = false;
 					
-					///bool integrated= false;
+					bool integrated= false;
+
 					if(mutated || integrated) vibrios[row][col].G->Create_Gene_Lists(total_nr_args);
 
 					if(mutated || integrated) vibrios[row][col].G->CalculateCompStrength();
@@ -325,25 +323,8 @@ void AgeGenes(TYPE2 **vibrios)
 				Genome::iter i = StringOfPearls->begin();
 				while(i!=StringOfPearls->end())
 				{
-					if(vibrios[row][col].G->IsToxin(*i))
-					{
-						if (V) cout << "found toxin with age "<< dynamic_cast<Toxin*>(*i)->gene_age_ << endl; // IF I dynamic cast here, can i still change the value?
-						dynamic_cast<Toxin*>(*i)->gene_age_ += 1;
-						if (V) cout << "new age is "<< dynamic_cast<Toxin*>(*i)->gene_age_<<endl;
-					}
-					else if(vibrios[row][col].G->IsAntitoxin(*i))
-	 				{
-						if (V) cout << "found antitoxin with age "<< dynamic_cast<Antitoxin*>(*i)->gene_age_ << endl;
-						dynamic_cast<Antitoxin*>(*i)->gene_age_ += 1;
-						if (V) cout << "new age is "<<  dynamic_cast<Antitoxin*>(*i)->gene_age_<<endl;
-					}
-	  				else if(vibrios[row][col].G->IsCore(*i))
-					{
-						if (V) cout << "found coregene with age "<< dynamic_cast<Core*>(*i)->gene_age_ << endl;
-						dynamic_cast<Core*>(*i)->gene_age_ += 1;
-						if (V) cout << "new age is "<< dynamic_cast<Core*>(*i)->gene_age_<<endl;
-					}
-				i++;
+					(*i)->gene_age_ += 1;					
+					i++;
 				}
 			}
 		}

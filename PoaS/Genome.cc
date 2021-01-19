@@ -49,7 +49,7 @@ void Genome::GenerateGenome(int init_nr_args, int total_nr_args, int init_nr_cor
 	genome_size_cost_ = genome_size_cost;
 	tot_nr_ARGs = total_nr_args;
 
-	bool V = FALSE;
+	bool V = false;
 	int i,j;
 
 	Toxin* toxin; // int A;
@@ -91,20 +91,11 @@ void Genome::GenerateGenome(int init_nr_args, int total_nr_args, int init_nr_cor
 	for(i=0;i<init_nr_noncoding;i++)
 	{
 		nc = new Noncoding(-1);					// Default the "type" of a non-coding part corresponds to a random type of toxin/antitoxin
-		nc->mobility = 0.80*genrand_real1();
+		nc->mobility = 0.00;
 		StringOfPearls->push_back(nc);  	    	// Add pointer to core to list
 		genomesize_++;
 	}
-	for(i=0;i<1;i++)
-	{
-		if(genrand_real1() < 0.00)
-		{
-			tra = new Transposase(-1);					// Default the "type" of a non-coding part corresponds to a random type of toxin/antitoxin
-			tra->mobility = 0.0;
-			StringOfPearls->push_back(tra);  	    	// Add pointer to core to list
-			genomesize_++;
-		}
-	}
+	
 
 	if(V) cout << "VOOR:" << endl;
 	if(V) cout << ListContent(NULL) << endl;
@@ -114,7 +105,26 @@ void Genome::GenerateGenome(int init_nr_args, int total_nr_args, int init_nr_cor
 	   random_shuffle( Vec.begin(), Vec.end() );
 	   StringOfPearls->assign( Vec.begin(), Vec.end() );
 
-
+	
+		if(genrand_real1() < 0.0)
+		{
+			iter ii = StringOfPearls->begin();
+			int randpos = (int)(genrand_real1()*genomesize_);
+			advance(ii,randpos);			
+			nc = new Noncoding(-1);					// Default the "type" of a non-coding part corresponds to a random type of toxin/antitoxin
+			nc->mobility = 1.00;
+			StringOfPearls->insert(ii,nc);  	    	// Add pointer to core to list
+			genomesize_++;
+			tra = new Transposase(-1);					// Default the "type" of a non-coding part corresponds to a random type of toxin/antitoxin
+			tra->mobility = 0.0;
+			StringOfPearls->insert(ii,tra);  	    	// Add pointer to core to list
+			genomesize_++;
+			nc = new Noncoding(-1);					// Default the "type" of a non-coding part corresponds to a random type of toxin/antitoxin
+			nc->mobility = 1.00;
+			StringOfPearls->insert(ii,nc);  	    	// Add pointer to core to list
+			genomesize_++;
+		}
+	
 	if(V) cout << "NA:" << endl;
     if(V) cout << ListContent(NULL) << endl;
 	if(V)cout << endl << endl;
@@ -154,6 +164,7 @@ void Genome::CopyPartOfGenome(iter begin,iter end)
 	while(i!=end)
 	{
 		pearl=(*i)->clone();
+		pearl->num_vertical_transfers_++;
 		StringOfPearls->push_back(pearl);
 		i++;
 	}
@@ -200,8 +211,7 @@ bool Genome::FetchTransposon(list<Pearl*> &Fragment, list<Pearl*> &PearlListTran
 	{
 		if(IsTransposase(*it))
 		{
-			found_transposase = TRUE;	
-		
+			found_transposase = TRUE;		
 		}
 		else
 		{
@@ -295,7 +305,7 @@ bool Genome::FetchTransposon(list<Pearl*> &Fragment, list<Pearl*> &PearlListTran
 			else
 				it++;
 		}
-		if(genrand_real1() < 0.0001) cout << "Fetched the following transposon: " << ListContent(&PearlListTransp,FALSE, FALSE, TRUE) << endl;
+		if(V) cout << "Fetched the following transposon: " << ListContent(&PearlListTransp,FALSE, FALSE, TRUE) << endl;
 		return true;
 	}
 	else 
@@ -307,34 +317,35 @@ bool Genome::FetchTransposon(list<Pearl*> &Fragment, list<Pearl*> &PearlListTran
 void Genome::CalculateCompStrength()
 {
 			bool V = FALSE;
- 				list<int> uniquecores;
-				if(coregenes_ > 0)
+			list<int> uniquecores;
+			if(coregenes_ > 0)
+			{
+				uniquecores = coregenes;
+				uniquecores.sort();
+				uniquecores.unique();
+				if(V)
 				{
-					uniquecores = coregenes;
-					uniquecores.sort();
-					uniquecores.unique();
-					if(V)
-					{
-						cout << "Found " << uniquecores.size() << " core genes. Need " << coregenes_ << endl;		// For clarity: coregenes_ is just a number to check the number of genes the species should minimally have, while without the hyphen (coregenes) is actually the list of all coregenes in that genome
-					}
+					cout << "Found " << uniquecores.size() << " core genes. Need " << coregenes_ << endl;		// For clarity: coregenes_ is just a number to check the number of genes the species should minimally have, while without the hyphen (coregenes) is actually the list of all coregenes in that genome
 				}
+			}
 
-				if(StringOfPearls->size() == 0)
-				{
-					compstrength = 1.0;
-				}
-				else if(coregenes_ == uniquecores.size())			// A) Check if all core genes exist in genome LS:!! nu mag je niet meer unieke coregenes hebben dan het minimum noodzakelijk?!?
-				{
-					if(V) cout << "Determine fitness because all core genes are present" << endl;					
-					//compstrength = 1.0-(resistance.size()+toxins.size()+coregenes.size())*gene_cost_;
-					//compstrength = 1.0-(coregenes.size()+resistance.size())*gene_cost_;
-					compstrength = 1.0-(coregenes.size()+transposases.size()+resistance.size())*gene_cost_;
-					if(V) cout << "Fitnessl lowered with " << (coregenes.size()+resistance.size())*gene_cost_  << endl;
-					compstrength -= (StringOfPearls->size()*genome_size_cost_);
-					if(V) cout << "Fitness l furthermore " << (StringOfPearls->size()*genome_size_cost_)  << endl;
-					compstrength = max(compstrength,0.0);
-				}
-				else compstrength = 0.0;
+			if(StringOfPearls->size() == 0)
+			{
+				compstrength = 1.0;
+			}
+			else if(coregenes_ == uniquecores.size())			// A) Check if all core genes exist in genome LS:!! nu mag je niet meer unieke coregenes hebben dan het minimum noodzakelijk?!?
+			{
+				if(V) cout << "Determine fitness because all core genes are present" << endl;					
+				//compstrength = 1.0-(resistance.size()+toxins.size()+transposases.size()+rcoregenes.size())*gene_cost_;
+				//compstrength = 1.0-(coregenes.size()+resistance.size())*gene_cost_;
+				compstrength = 1.0-(coregenes.size()+transposases.size()+resistance.size())*gene_cost_;
+				if(V) cout << "Fitnessl lowered with " << (coregenes.size()+resistance.size())*gene_cost_  << endl;
+				compstrength -= (StringOfPearls->size()*genome_size_cost_);
+				if(V) cout << "Fitness l furthermore " << (StringOfPearls->size()*genome_size_cost_)  << endl;
+				compstrength = max(compstrength,0.0);
+				if (V) cout << "Fitness set to " << compstrength << endl;
+			}
+			else compstrength = 0.0;
 }
 /**********
 
@@ -426,7 +437,7 @@ bool Genome::MutateGenome(float gene_mob, float loss, float dupl, float tdupl, f
 }
 
 
-bool Genome::TransposonDynamics()
+bool Genome::TransposonDynamics(float break_chance)
 {
 	/// TRANSPOSON EITHER JUMPING OR DUPLICATING THEMSELVES
 	
@@ -434,44 +445,51 @@ bool Genome::TransposonDynamics()
 	
 	if(V) cout << "\n\nTRANSPOSON DYNAMIC START\n\nScanning for transposable element from " <<  endl;
 	bool mutated = false;
-	Create_Gene_Lists(tot_nr_ARGs);
+
+	// for(int i = 0; i < 1000; i ++) 
+	// {
+		Create_Gene_Lists(tot_nr_ARGs);
 
 		int start = 0;
-		int end = 5; //genrand_int(5,5); 			// NOTE HARD CODED, ALSO CHANGE IN DEGRADE FUNCTIno!		
-		int max_num_jumps = 5;
+		int end = genrand_int(3,7); 			// NOTE HARD CODED, ALSO CHANGE IN DEGRADE FUNCTIno!		
+		int max_num_jumps = 1;
 		int num_jumps = 0;
+		
 		if(end > StringOfPearls->size()) end = StringOfPearls->size();		
 		while(end < StringOfPearls->size())
 		{
-			bool cut = genrand_real1() < 0.5;
-			bool paste = genrand_real1() < 0.5;
+			bool cut = genrand_real1() < 0.0;
+			bool paste = genrand_real1() < 1.0;
 			if(V)cout << "-----------------------------------------------------" << endl;
 			if(V)cout << "Before int" << endl;
 			if(V)cout << "Cut?" << (cut) << endl;
 			if(V)cout << "Paste?" << (paste) << endl;
 			if(V)cout << ListContent(NULL) << endl;
 			
-			bool integrated = IntegrateDNA(*StringOfPearls,tot_nr_ARGs,start,end,cut,paste); //FetchTransposon(PearlList_ToIntegrate, Transposon, scan_start, scan_end, true);
-			if(integrated) mutated = true;
+			bool integrated = IntegrateDNA(*StringOfPearls,tot_nr_ARGs,start,end,cut,paste,false,break_chance); //FetchTransposon(PearlList_ToIntegrate, Transposon, scan_start, scan_end, true);
+			if(integrated) {mutated = true; num_jumps++; }
 			genomesize_ = StringOfPearls->size();
 			
 			if(V)cout << "After int" << endl;
 			if(V)cout << ListContent(NULL) << endl;
 			start+=(end-start);
-			end=start+5; // genrand_int(1,5);			
+			end=start+5; // genrand_int(1,5);		
+			
 			if(end > StringOfPearls->size()) end = StringOfPearls->size();
-			num_jumps++;
+			
 			if(num_jumps > max_num_jumps) 
 			{
-				compstrength = 0.0;
 				break;				
 			}
 		}
+	// }
+	
 
 
 	if(mutated) 
 	{
 		Create_Gene_Lists(tot_nr_ARGs);
+		CalculateCompStrength();
 		return true;
 	}			
 
@@ -485,7 +503,7 @@ bool Genome::TransposonDynamics()
 void Genome::MutateMobility(iter ii)
 {
 	if(IsNoncoding(*ii))
-		dynamic_cast<Noncoding *>(*ii)->mobility = min(1.0,max(0.0,( (dynamic_cast<Noncoding *>(*ii)->mobility) + (2.0*genrand_real1()-1.0) * 0.2)));
+		dynamic_cast<Noncoding *>(*ii)->mobility = min(1.0,max(0.0,( (dynamic_cast<Noncoding *>(*ii)->mobility) + (2.0*genrand_real1()-1.0) * 0.1)));
 }
 
 Genome::iter Genome::GeneLoss(iter ii)
@@ -617,7 +635,7 @@ Genome::iter Genome::Gene_To_NonCoding(iter ii)
 	//if(V) cout << "Inheriting mobility"
 	if(V)cout << "Befor: " << ListContent(NULL) << endl;
 	nc = new Noncoding(type);	 // Make new noncoding pearl with a random type (random with respect to our toxin/antitoxins)
-	nc->mobility = genrand_real1(); 	 	// Inherit mobility from original gene
+	nc->mobility = 0.0; 	 	// Inherit mobility from original gene
 	delete *ii;						 // Delete the original gene
 	ii = StringOfPearls ->erase(ii); //Erase from list
 	ii = StringOfPearls->insert(ii,nc);
@@ -713,11 +731,11 @@ bool Genome::GeneDiscovery(double gendisc)
 		mutated=TRUE;
 	}	
 
-	//if(V) cout << "GeneDiscovery called" << endl;
-	if(genrand_real1()<gendisc)
+	//cout << "GeneDiscovery called" << endl;
+	if(genrand_real1()<gendisc*10)
 	{
 		if(V) cout << ListContent(NULL) << endl;
-		if(V) cout << "Discovering tra with chance " << gendisc << endl;
+		if(V) cout << "Discovering tra with chance " << gendisc*10 << endl;
 		Transposase *tra;
 		ii = StringOfPearls->begin();
 		randpos = (int)(genrand_real1()*genomesize_);
@@ -726,34 +744,34 @@ bool Genome::GeneDiscovery(double gendisc)
 		type = genrand_int(0,tot_nr_ARGs-1);		// Counts from 0 because computers :) USING RESISTANCE SIZE = OKAY
 		
 		// UNCOMMENT BELOW TO MAKE TRANSPASE-DISCOVERY INCLUDING IRS
-		// Noncoding *nc;
-		// nc = new Noncoding(type);						// Let toxin point to a new Toxin
-        // nc->mobility = 0.85+genrand_real1()*0.15;	// Newly introduced 
-		// ii = StringOfPearls->insert(ii,nc);  		     	// Add pointer to toxin to pearl-list
-		// if(genrand_real1() < 0.5)
-		// {
-		// 	nc = new Noncoding(type);						// Let toxin point to a new Toxin
-        // 	nc->mobility = 0.0;	// Newly introduced 
-		// 	ii = StringOfPearls->insert(ii,nc);  		     	// Add pointer to toxin to pearl-list
-		// }
+		Noncoding *nc;
+		nc = new Noncoding(type);						// Let toxin point to a new Toxin
+        nc->mobility = 0.75+genrand_real1()*0.25;	// Newly introduced 
+		ii = StringOfPearls->insert(ii,nc);  		     	// Add pointer to toxin to pearl-list
+		if(genrand_real1() < 0.5)
+		{
+			nc = new Noncoding(type);						// Let toxin point to a new Toxin
+        	nc->mobility = 0.0;	// Newly introduced 
+			ii = StringOfPearls->insert(ii,nc);  		     	// Add pointer to toxin to pearl-list
+		}
 		
+		// MAIN TRANAPoSASE
 		if(V) cout << "Type: " << type << " van de " << tot_nr_ARGs << endl;
 		tra = new Transposase(type);						// Let toxin point to a new Toxin
         tra->mobility = 0.0;	// Newly introduced 
 		ii = StringOfPearls->insert(ii,tra);  		     	// Add pointer to toxin to pearl-list
 
 		// UNCOMMENT BELOW TO MAKE TRANSPASE-DISCOVERY INCLUDING IRS
-		// if(genrand_real1() < 0.5)
-		// {
-		// 	nc = new Noncoding(type);						// Let toxin point to a new Toxin
-        // 	nc->mobility = 0.0;	// Newly introduced 
-		// 	ii = StringOfPearls->insert(ii,nc);  		     	// Add pointer to toxin to pearl-list
-		// }
-
-		// type = genrand_int(0,tot_nr_ARGs-1);				// Counts from 0 because computers :) USING RESISTANCE SIZE = OKAY
-		// nc = new Noncoding(type);							// Let toxin point to a new Toxin
-        // nc->mobility = 0.85+genrand_real1()*0.15;			// Newly introduced 
-		// ii = StringOfPearls->insert(ii,nc);  		     	// Add pointer to toxin to pearl-list
+		if(genrand_real1() < 0.5)
+		{
+			nc = new Noncoding(type);						// Let toxin point to a new Toxin
+        	nc->mobility = 0.0;	// Newly introduced 
+			ii = StringOfPearls->insert(ii,nc);  		     	// Add pointer to toxin to pearl-list
+		}
+		type = genrand_int(0,tot_nr_ARGs-1);				// Counts from 0 because computers :) USING RESISTANCE SIZE = OKAY
+		nc = new Noncoding(type);							// Let toxin point to a new Toxin
+        nc->mobility = 0.75+genrand_real1()*0.25;			// Newly introduced 
+		ii = StringOfPearls->insert(ii,nc);  		     	// Add pointer to toxin to pearl-list
 
 		//cout << ListContent(NULL) << endl;
 		genomesize_++;
@@ -763,12 +781,8 @@ bool Genome::GeneDiscovery(double gendisc)
 	return mutated;
 }
 
-bool Genome::IntegrateDNA(list<Pearl*> &PearlList_ToIntegrate, int total_nr_args, int scan_start, int scan_end, bool cut, bool paste)
+bool Genome::IntegrateDNA(list<Pearl*> &PearlList_ToIntegrate, int total_nr_args, int scan_start, int scan_end, bool cut, bool paste, bool hgt, float break_chance)
 {
-	
-			
-		
-
 	bool V = false;
   	if(V)
 	{
@@ -809,15 +823,19 @@ bool Genome::IntegrateDNA(list<Pearl*> &PearlList_ToIntegrate, int total_nr_args
 		advance(ii,randpos);
 
 
-		// Where it inserts, the existing gene is broken (delete, replace with two flanks that are non-coding)
-		delete *ii;
-		ii = StringOfPearls->erase(ii);
-
-		// Insert NC (left side of the broken gene)
-		Noncoding *nc;		
-		nc = new Noncoding(0);						// Let 
-        nc->mobility = genrand_real1();					// Newly introduced 
-		ii = StringOfPearls->insert(ii,nc);
+		// OPTIONAL STUFF // Where it inserts, the existing gene is broken (delete, replace with two flanks that are non-coding)
+		bool insert_in_gene = false;
+		if(genrand_real1() < 0.5) insert_in_gene = true;
+		if(insert_in_gene)
+		{
+			delete *ii;
+			ii = StringOfPearls->erase(ii);
+			// Insert NC (left side of the broken gene)
+			Noncoding *nc;
+			nc = new Noncoding(0);						// Let 
+			nc->mobility = genrand_real1();					// Newly introduced 
+			ii = StringOfPearls->insert(ii,nc);
+		}
 
 		if(V)
 		{
@@ -831,6 +849,8 @@ bool Genome::IntegrateDNA(list<Pearl*> &PearlList_ToIntegrate, int total_nr_args
 		while(it!=Transposon.end())
 		{
 			pearl=(*it);
+			if(hgt) pearl->num_horizontal_transfers_++;
+			else pearl->num_jumps_++;
 			if(V) cout << "Inserting bead to DNA.." << endl;
 			StringOfPearls->insert(ii, pearl);
 			
@@ -839,12 +859,14 @@ bool Genome::IntegrateDNA(list<Pearl*> &PearlList_ToIntegrate, int total_nr_args
 			it = Transposon.erase(it);
 		}
 
-		// Insert NC (right side of the broken gene)
-		
-		nc = new Noncoding(0);						// Let 
-        nc->mobility = genrand_real1();					// Newly introduced 
-		ii = StringOfPearls->insert(ii,nc);
-
+		// OPTIONAL STUFF END Insert NC (right side of the broken gene) (optional)
+		// if(insert_in_gene)
+		// {
+		// 	Noncoding *nc;
+		// 	nc = new Noncoding(0);						// Let 
+       	// 	nc->mobility = genrand_real1();					// Newly introduced 
+		// 	ii = StringOfPearls->insert(ii,nc);
+		// }
 		if(V) cout << "Done with splice." << endl;
 		
 		genomesize_ = StringOfPearls->size();
@@ -872,7 +894,7 @@ void Genome::Create_Gene_Lists(int total_nr_args)
 	3) A list of household genes this individual produces
 	*/
 
-	bool V = FALSE;
+	bool V = false;
 
 	list<Pearl*>* StringOfPearls = this->StringOfPearls;
 	iter i = StringOfPearls->begin();
@@ -884,7 +906,10 @@ void Genome::Create_Gene_Lists(int total_nr_args)
 
 	if(V) cout << "Making lookup table" << endl;
 	resistance_lookup.assign(total_nr_args, 0);	// Initialise as 0's
-
+	toxins.clear();
+	coregenes.clear();
+	transposases.clear();
+	if(V) cout << "Before:" << ListContent(NULL) << endl;
 	if(V) cout << endl;
 
 	while(i!=StringOfPearls->end())
@@ -912,6 +937,10 @@ void Genome::Create_Gene_Lists(int total_nr_args)
 		}
 		i++;
 	}
+
+	if(V) cout << "After:" << ListContent(NULL) << endl;
+	if(V) cout << "Tra:" << transposases.size() << endl;
+
 	if(V)
 	{
 		for (vector<int>::const_iterator i = resistance_lookup.begin(); i != resistance_lookup.end(); ++i)
@@ -957,7 +986,7 @@ string Genome::ListContent(list<Pearl*> *StringOfPearls, bool ignore_core, bool 
 		if(IsToxin(*i))
 		{
 			tox=dynamic_cast<Toxin *>(*i);
-			stringtemp << "\033[1;41m" << tox->type;
+			stringtemp << "\033[1;41mt" << tox->type;
 			if(includemobility) stringtemp << ":" << tox->mobility;
 			stringtemp << "\033[00m";
 			GenomeContent+=stringtemp.str();
@@ -984,7 +1013,7 @@ string Genome::ListContent(list<Pearl*> *StringOfPearls, bool ignore_core, bool 
 		else if(IsAntitoxin(*i))
 		{
 			antitox=dynamic_cast<Antitoxin*> (*i);
-			stringtemp << "\033[1;44m" << antitox->type;
+			stringtemp << "\033[1;44ma" << antitox->type;
 			if(includemobility) stringtemp <<  ":" <<antitox->mobility;
 			stringtemp << "\033[00m";
 			GenomeContent+=stringtemp.str();
@@ -1004,25 +1033,17 @@ string Genome::ListContent(list<Pearl*> *StringOfPearls, bool ignore_core, bool 
 			nc=dynamic_cast<Noncoding *>(*i);
 			if(nc->mobility < 0.75) 
 			{
-				stringtemp << "\033[1;90m";
-				if(includemobility) stringtemp << "" << nc->mobility;
-				else stringtemp << "C";
+				stringtemp << "\033[1;90mn";
+				if(includemobility) stringtemp << ":" << nc->mobility;
 				stringtemp << "\033[00m";
 			}			
-			else if(nc->mobility < 0.875)
+			else 
 			{
-				stringtemp << "\033[1;43m";
+				stringtemp << "\033[1;43mR";
 				if(includemobility) stringtemp << "" << nc->mobility;
-				else stringtemp << "r";
 				stringtemp << "\033[00m";
 			}
-			else
-			{
-				stringtemp << "\033[1;43m";
-				if(includemobility) stringtemp << "" << nc->mobility;
-				else stringtemp << "R";
-				stringtemp << "\033[00m";
-			}
+			
 			GenomeContent+=stringtemp.str();
 			stringtemp.clear();
 		}

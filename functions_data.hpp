@@ -1,10 +1,12 @@
 extern int nrow;
 extern int ncol;
 extern int Time;
+extern bool Graphs;
 
 extern int total_nr_args;
 extern int init_nr_coregenes;
 extern string toxin_mobility_folder;
+extern string folder;
 extern string antitoxin_mobility_folder;
 extern string coregene_mobility_folder;
 extern string frequencies_folder;
@@ -12,11 +14,11 @@ extern string frequencies_folder;
 extern vector<double> ABs_concentration;
 /********* Declarations  *********/
 
-string GetToxin_Antitoxin_Stats(TYPE2**);   // LS: why is the word string not purple?
+string Get_Sim_Stats(TYPE2**, bool save);   // LS: why is the word string not purple?
 
 string filename; ofstream myfile;
 
-string GetToxin_Antitoxin_Stats(TYPE2 **vibrios)
+string Get_Sim_Stats(TYPE2 **vibrios,bool save)
 {
     //cout << "Getting toxstats for " << total_nr_toxins << " toxins" << endl;
     vector<int> toxcount(total_nr_args,0);
@@ -27,6 +29,22 @@ string GetToxin_Antitoxin_Stats(TYPE2 **vibrios)
     double sumtra = 0.0;
     double sumtrans = 0.0;
     double sumtrans2 = 0.0;
+    double sum_genomesize = 0;
+    double sum_hgt_hk = 0;
+    double sum_hgt_arg = 0;
+    double sum_hgt_tra = 0; 
+    double sum_jump_hk = 0;
+    double sum_jump_arg = 0;
+    double sum_jump_tra = 0; 
+    int num_nc_pearls=0;
+    int num_IR_pearls=0;
+    int num_hk_pearls=0;
+    int num_arg_pearls=0;
+    Noncoding* nc;
+
+    double sum_nc_mobility = 0.0;   
+    double sum_IR_mobility = 0.0;
+    
     for(int row = 1; row<=nrow;row++){
         for(int col=1;col<=ncol;col++){
             if(vibrios[row][col].val >= 1)
@@ -37,48 +55,220 @@ string GetToxin_Antitoxin_Stats(TYPE2 **vibrios)
                 sumtrans += vibrios[row][col].G->transformant==1;
                 sumtrans2 += vibrios[row][col].G->transformant==2;
 		            sumfit += vibrios[row][col].G->compstrength;
+                sum_genomesize += vibrios[row][col].G->StringOfPearls->size();
                 for(int i=0;i<total_nr_args;i++)
                 {
                     toxcount[i] += vibrios[row][col].G->GetTotalNrToxins(i);                    
                     // argcount[i] += vibrios[row][col].G->resistance_lookup[i];
                     if(vibrios[row][col].G->resistance_lookup[i]>0) argcount[i]++;
                 }
+
+                Genome::iter i = vibrios[row][col].G->StringOfPearls->begin();
+                while(i!=vibrios[row][col].G->StringOfPearls->end())
+                {
+                  if(vibrios[row][col].G->IsNoncoding(*i))
+                  {                  
+                    nc=dynamic_cast<Noncoding*> (*i);
+                    sum_nc_mobility += nc->mobility;
+                    num_nc_pearls ++;
+                    if(nc->mobility > 0.75)
+                    {
+                      num_IR_pearls++;
+                      sum_IR_mobility+=nc->mobility;
+                    }
+                  }
+                  else if(vibrios[row][col].G->IsARG(*i))
+                  {
+                    sum_hgt_arg+= (*i)->num_horizontal_transfers_;
+                    sum_jump_arg+= (*i)->num_jumps_;
+                    num_arg_pearls++;
+                  }
+                  else if(vibrios[row][col].G->IsCore(*i))
+                  {
+                    sum_hgt_hk+= (*i)->num_horizontal_transfers_;
+                    sum_jump_hk+= (*i)->num_jumps_;
+                    num_hk_pearls++;
+                  }
+                  else if(vibrios[row][col].G->IsTransposase(*i))
+                  {
+                    sum_hgt_tra+= (*i)->num_horizontal_transfers_;
+                    sum_jump_tra+= (*i)->num_jumps_;
+                  }
+                  if(save)
+                  {
+                    (*i)->num_horizontal_transfers_=0; // Reset counter for num transfers
+                    (*i)->num_jumps_ = 0;
+                  }
+                  i++;
+                }
             }
         }
     }
 
     stringstream genestats;
-
+    if(pop_size == 0) {cout << "Shutting down simulation as no more cells are alive" << endl; exit(0); }
     
     float fract_TEs = (float)num_TEs/pop_size;
+    float fract_arg = (float)num_arg_pearls/pop_size;
     float fract_tra = (float)sumtra/pop_size;
+    float fract_nc = (float)num_nc_pearls/pop_size;
     float fract_trans = (float)sumtrans/pop_size;
     float fract_trans2 = (float)sumtrans2/pop_size;
-    if(Time==0) {fract_TEs = 0.0; fract_tra=0.0;}
 
-    genestats << ">\t";
+    float fract_hgt_hk = num_hk_pearls > 0 ? (float)sum_hgt_hk/num_hk_pearls: 0.0;
+    float fract_hgt_tra = sumtra > 0 ? (float)sum_hgt_tra/sumtra : 0.0;
+    float fract_hgt_arg = num_arg_pearls > 0 ? (float)sum_hgt_arg/num_arg_pearls : 0.0;
+
+    float fract_jump_hk = num_hk_pearls > 0 ? (float)sum_jump_hk/num_hk_pearls: 0.0;
+    float fract_jump_tra = sumtra > 0 ? (float)sum_jump_tra/sumtra : 0.0;
+    float fract_jump_arg = num_arg_pearls > 0 ? (float)sum_jump_arg/num_arg_pearls : 0.0;
+  
+    if(Time==0)
+    {
+      //genestats << ">";
+      genestats << "Time\tAVG_g\tAVG_f\tPopsize\tFracHK\tFracIRs\tFracTra\tFracARG\tFractNC\tHGT_hk\tJump_hk\tHGT_arg\tJump_arg\tHGT_tra\tJump_tra\tPhi_NC\tPhi_IR\t";
+      for (int i=0;i<total_nr_args;i++)
+        genestats << "f(ARG" << i << ")\t" << "[ARG" << i << "]\t";
+      genestats << "\n";
+		}
+    
+    genestats << fixed << setprecision(4) << Time << "\t" << (float)sum_genomesize/pop_size << "\t";
+    
+    genestats << sumfit/pop_size << "\t" << pop_size << "\t" << (float)num_hk_pearls/pop_size << "\t" << fract_TEs << "\t" << fract_tra << "\t" << fract_arg << "\t" << fract_nc << "\t";
+    genestats << fract_hgt_hk << "\t" << fract_jump_hk << "\t" << fract_hgt_arg << "\t" << fract_jump_arg << "\t" << fract_hgt_tra << "\t" << fract_jump_tra << "\t" << (float)sum_nc_mobility/num_nc_pearls << "\t" << (float)sum_IR_mobility/num_IR_pearls << "\t";
     for (int i=0;i<total_nr_args;i++)
     {
 		  genestats << fixed << setprecision(4) << (float)argcount[i]/pop_size << "\t";    				
       genestats << fixed << setprecision(4) << ABs_concentration[i] << "\t";
     }
-    genestats << sumfit/pop_size << "\t" << pop_size << "\t" << fract_TEs << "\t" << fract_tra;
+    
     genestats << endl;
     string returnstring;
     
     returnstring+=genestats.str();
-    double values_1[16] = {(float)pop_size,nrow*ncol+100,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-    double values_2[16] = {(float)argcount[0]/pop_size,(float)argcount[1]/pop_size,(float)argcount[2]/pop_size,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-    double values_3[16] = {ABs_concentration[0],ABs_concentration[1],ABs_concentration[2],1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-    double values_4[16] = {fract_trans,fract_tra,fract_trans2,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-    for(int i =0;i<16;i++)
-      if(i>total_nr_args-1) values_2[i] = 0.0;
-    PlotArrays(values_1,values_2,values_3,values_4,"");
+    if(Graphs)
+    {
+      double values_1[16] = {(float)pop_size,nrow*ncol+100,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+      double values_2[16] = {(float)argcount[0]/pop_size,(float)argcount[1]/pop_size,(float)argcount[2]/pop_size,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+      double values_3[16] = {ABs_concentration[0],ABs_concentration[1],ABs_concentration[2],1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+      double values_4[16] = {fract_trans,fract_tra,fract_trans2,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+      for(int i =0;i<16;i++)
+        if(i>total_nr_args-1) values_2[i] = 0.0;
+      PlotArrays(values_1,values_2,values_3,values_4,"");
+    }
 
-	genestats.clear();	// Lekkeropruimen22
+	genestats.clear();	
 	toxcount.clear();
 	argcount.clear();
-    return returnstring;
+  if(save)
+  {
+    ofstream file;
+    stringstream summary;
+    summary  << folder << "/Summary_stats.dat";
+    string filename = summary.str();
+    file.open (filename.c_str(), ios::app);
+    file << returnstring;
+    file.close();
+  }
+  return returnstring;
+}
+
+void Dump_Genomes(TYPE2 **vibrios)
+{
+  bool V = FALSE;
+  ofstream file;
+  stringstream all_genomes;
+  all_genomes  << folder << "/Genomes.dat";
+  string filename = all_genomes.str();
+  file.open (filename.c_str(), ios::app);
+  if(Time==0) file << "Time\trow\tcol\tgenome" << endl;
+  for(int row = 1; row<=nrow;row++){
+  for(int col=1;col<=ncol;col++){
+        if(vibrios[row][col].val > 1)
+        {                    
+          file << Time << "\t" << row << "\t" << col << "\t" << vibrios[row][col].G->ListContent(NULL,false,false,true) << endl;            
+        }
+      }
+  }
+  file.close();
+}
+
+
+void Dump_Grids(TYPE2 **vibrios, TYPE2 **dna)
+{
+  bool V = FALSE;
+  ofstream file;
+  stringstream filepath;
+  filepath  << folder << "/NumTransposonGrid.dat";
+  string filename = filepath.str();
+  file.open (filename.c_str(), ios::app);
+
+  ofstream file2;
+  stringstream filepath2;
+  filepath2  << folder << "/NumTransformantGrid.dat";
+  filename = filepath2.str();
+  file2.open (filename.c_str(), ios::app);
+
+  ofstream file3;
+  stringstream filepath3;
+  filepath3  << folder << "/ValGrid.dat";
+  filename = filepath3.str();
+  file3.open (filename.c_str(), ios::app);
+
+  ofstream file4;
+  stringstream filepath4;
+  filepath4  << folder << "/MobGrid.dat";
+  filename = filepath4.str();
+  file4.open (filename.c_str(), ios::app);
+
+  ofstream file5;
+  stringstream filepath5;
+  filepath5  << folder << "/DNAGrid.dat";
+  filename = filepath5.str();
+  file5.open (filename.c_str(), ios::app);
+
+  if(Time==0) file << "Time\trow\tcol\tnum_transposons" << endl;
+  if(Time==0) file2 << "Time\trow\tcol\ttransformant_type" << endl;
+  if(Time==0) file3 << "Time\trow\tcol\tval" << endl;
+  if(Time==0) file4 << "Time\trow\tcol\tmobility" << endl;
+  if(Time==0) file5 << "Time\trow\tcol\tnum_frags" << endl;
+  for(int row = 1; row<=nrow;row++)
+  {
+  for(int col=1;col<=ncol;col++)
+      {
+        if(vibrios[row][col].val > 1)
+        {
+          float sum_mob = 0.0;
+          int num_mob = 0;
+          Genome::iter i = vibrios[row][col].G->StringOfPearls->begin();
+          while(i!=vibrios[row][col].G->StringOfPearls->end()) 
+          {
+            if(vibrios[row][col].G->IsNoncoding(*i)) 
+            {
+              double mob = vibrios[row][col].G->GetPearlMobility(*i);
+              if(mob > 0.75)
+              {
+                num_mob++;
+                sum_mob+=mob; 
+              }
+            }
+            i++;
+          }
+          float avg_mob = num_mob > 0 ? sum_mob/num_mob : 0.0;
+
+          file << Time << "\t" << row << "\t" << col << "\t" << vibrios[row][col].G->transposases.size() << endl;
+          file2 << Time << "\t" << row << "\t" << col << "\t" << vibrios[row][col].G->transformant << endl;
+          file3 << Time << "\t" << row << "\t" << col << "\t" << vibrios[row][col].val << endl;
+          file4 << Time << "\t" << row << "\t" << col << "\t" << avg_mob << endl;
+          file5 << Time << "\t" << row << "\t" << col << "\t" << dna[row][col].DNA->Fragments->size() << endl;
+        }
+      }
+  }
+  file.close();
+  file2.close();
+  file3.close();
+  file4.close();
+  file5.close();
 }
 
 string Get_Genome_Stats(TYPE2 **vibrios)

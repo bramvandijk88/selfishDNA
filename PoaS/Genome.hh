@@ -50,7 +50,7 @@ class Genome
 
 		// mutations
 		bool MutateGenome(float gene_mob, float loss, float dupl, float tdupl, float tdel, float inv, float gtn, float ntg, float gendisc);
-		bool TransposonDynamics();
+		bool TransposonDynamics(float break_chance);
 		void MutateMobility(iter ii);
 		Genome::iter GeneLoss(iter ii);
 		Genome::iter GeneDupl(iter ii);
@@ -60,7 +60,7 @@ class Genome
 		Genome::iter Gene_To_NonCoding(iter ii);
 		Genome::iter NonCoding_To_Gene(iter ii);
 
-		bool IntegrateDNA(list<Pearl*> &PearlList_ToIntegrateFrom, int,int,int,bool cut, bool paste);
+		bool IntegrateDNA(list<Pearl*> &PearlList_ToIntegrateFrom, int,int,int,bool cut, bool paste, bool hgt, float break_chance);
 
 		bool GeneDiscovery(double chance);
 

@@ -9,9 +9,9 @@ class Transposase : public Pearl
 		int type;	
 		double mobility;
 
-		int gene_age_;						// Telt bijv. 1000 tijdstappen
-		int num_horizontal_transfers_;		// Elke keer als HGT (reset after x time steps)
-		int num_vertical_transfers_;		// Elke keer als VGT
+		// int gene_age_;						// Telt bijv. 1000 tijdstappen
+		// int num_horizontal_transfers_;		// Elke keer als HGT (reset after x time steps)
+		// int num_vertical_transfers_;		// Elke keer als VGT
 
 		Transposase();  // constructor
 		virtual Pearl* clone() const;

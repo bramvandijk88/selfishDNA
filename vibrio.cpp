@@ -41,7 +41,7 @@ int dodisplay, opendisplay, summaryinterval, displayinterval, fieldsize, livegra
 
 // Saving/plotting vars below
 bool makemovie = 1; int moviecounter = 0; bool mixing = 0; bool diffusing = 0; bool mutation = 1; int genedisplay = 1;
-bool Graphs = 1; bool Output = 1; bool mobilitygathering = 1; bool getgenefrequencies = 1;
+bool Graphs = 0; bool Output = 1; bool mobilitygathering = 1; bool getgenefrequencies = 1;
 
 string dumpfolder = "/dumps";
 string genedata = "/genedata";
@@ -57,9 +57,19 @@ string antitoxin_mobility_folder;
 string coregene_mobility_folder;
 string frequencies_folder;
 
+// Command line controllable options
 bool mix = false; 
 bool mixgrid = false;
 bool dohgt = true;
+bool dojump = true;
+float jumprate = 0.1;
+float uptakerate = 0.1;
+float break_chance = 0.0;
+float ab_inf = 0.025; // gives 1.0 given the default decay
+int ab_start = 200000;
+int ab_interval = 30000;
+int ab_duration = 15000;
+
 int dna_diff = 2;
 
 void Initial(void)
@@ -79,9 +89,17 @@ void Initial(void)
 		if(readOut == "-Scale") {myscale = atoi(argv_g[i+1]);}
 
 		if(readOut == "-Diff") {genediffusion = atoi(argv_g[i+1]); cmd_eDNAdiffusion = true;}
-		if(readOut == "-Mix") {mix = true; }
-		if(readOut == "-MixGrid") {mixgrid = true; }
+		if(readOut == "-Jumprate") {jumprate = atof(argv_g[i+1]);}
+		if(readOut == "-BreakChance") {break_chance = atof(argv_g[i+1]);}
+		if(readOut == "-Uptakerate") {uptakerate = atof(argv_g[i+1]);}
+		if(readOut == "-ABinf") {ab_inf = atof(argv_g[i+1]);}
+		if(readOut == "-ABstart") {ab_start = atoi(argv_g[i+1]);}
+		if(readOut == "-ABinterval") {ab_interval = atoi(argv_g[i+1]);}
+		if(readOut == "-ABduration") {ab_duration = atoi(argv_g[i+1]);}
+		if(readOut == "-MixDNA") {mix = true; }
+		if(readOut == "-MixPop") {mixgrid = true; }
 		if(readOut == "-noHGT") {dohgt = false; }
+		if(readOut == "-noJump") {dojump = false; }
 
 		readOut = (char*)argv_g[i];
 		string map_extension ="" ;
@@ -89,7 +107,8 @@ void Initial(void)
 		{
 			outputgiven = TRUE;
 			map_extension = argv_g[i+1];
-			folder = "/home/brem/ARG_output/" + currentDateTime() + "_" + map_extension;	// Paths to local storages
+			//folder = \"/mnt/d/Selfish_output/\" + currentDateTime() + \"_\" + map_extension;	// Paths to local storages
+			folder = "/mnt/d/Selfish_output/" + map_extension;	// Paths to local storages
 			string command = "mkdir -p " + folder;
 			system(command.c_str());
 		}
@@ -186,12 +205,17 @@ void Initial(void)
 	InDat("%d", "displayinterval", (int*)&displayinterval);
 	InDat("%d", "summaryinterval", (int*)&summaryinterval);
 
+	for(int i = 0; i < (int)argc_g; i++)
+	{
+		readOut = (char*)argv_g[i];
+		if(readOut == "-Seed") {myseed = atoi(argv_g[i+1]);}
+        }
 	// Code below takes seed from the parameter file, or chooses time as a seed if this parameter file contains a 0 as seed (this seed is written to a file named seed.txt)
 	if(myseed==0)
     	ulseedG = time(0);
 	else ulseedG = myseed;
 
-	MaxTime = 1000000;
+	MaxTime = 300000;
 	nrow = fieldsize;
 	ncol = fieldsize;
 	nplane = 5;
@@ -214,7 +238,7 @@ void InitialPlane(void)
   	RefreshEnvironment(Environment);							// Puts 3 circles of resource on the Resource plane
   InitialiseGenomes(Vibrios, Environment, init_nr_args, total_nr_args, init_nr_coregenes, init_nr_noncoding);							// Initialises all pearl-on-a-string genomes for LIVING cells
   InitialiseDNAPlane(DNA);																																									// Every pixel gets an empty eDNA list
-  cout << endl << endl << " -= Start of simulation =- " << endl << endl;
+  //cout << endl << endl << " -= Start of simulation =- " << endl << endl;
 
 
   ColorRGB(0,0,0,0);                    // Color 0 reserved for BLACK
@@ -241,6 +265,18 @@ void NextState(int row,int col)
 			Vibrios[row][col].val = 1;											// 1 = Temporary dead cell, which is cleaned up and set to 0 later
 			if(dohgt) SpillDNA(Vibrios,DNA,row,col);
         }	
+		else if(genrand_real1() < jumprate)
+		{
+			bool integrated = false;
+			if(dojump) integrated = Vibrios[row][col].G->TransposonDynamics(break_chance);			
+			// bool integrated=false;
+			if(integrated) 
+			{
+				Vibrios[row][col].G->transformant = 2;	
+				Vibrios[row][col].G->Create_Gene_Lists(total_nr_args);
+				Vibrios[row][col].G->CalculateCompStrength();		
+			}
+		}
 	}
 	else if(Vibrios[row][col].val==0){ // && genrand_real1() < birth )			// LS: with birth at 1 this always happens
         	CompeteAndReproduce(Vibrios,Environment,row,col);
@@ -269,18 +305,14 @@ void DiffuseDNA(int row, int col)
 
 void Update(void)
 {
-  //if(genrand_real1() < 0.05)													// LS: move chance to par.txt?
-	RefreshEnvironment(Environment);									// Add new resource particle with a certain probability
-
-	//for(int i = 0; i<3;i++) ObstacleMargolus(Vibrios,Environment,1);	// Vibrios do not diffuse if on a resource particle
-	
+  	//if(Time == 50000) dohgt=false;		
 
 	CalculateABEffect(Vibrios);								// extra death due to toxin is calculated. Competitive strenght is calcutated if Genome changes. No explicit fitness
 	Synchronous(1,Vibrios);																//LS: note to self: holds next-state function/loop thingy
 	CleanUpTheDead(Vibrios, DNA);
 	
 	for(int i =0;i<genediffusion;i++)
-		Asynch_func(*DiffuseDNA);    // Special diffusion stuff by Brem to diffuse (potentially) unique objects. W.i.p. Also see DiffuseParticles() below
+		Asynch_func(*DiffuseDNA);    		// Special diffusion stuff by Brem to diffuse (potentially) unique objects. W.i.p. Also see DiffuseParticles() below
 	if(dohgt) 
 	{
 		for(int row=1; row<=nrow; row++)for(int col=1; col<=ncol; col++) DegradateDNA(DNA,row,col,degr); 
@@ -291,10 +323,7 @@ void Update(void)
 	AgeGenes(Vibrios);
 	//if (Time > 600000) PerfectMix(Vibrios);
 	if(mixgrid) PerfectMix(Vibrios);
-	if(mix)
-	{
-	        PerfectMix(DNA);
-	}
+	if(mix) PerfectMix(DNA);
 
 
 	
@@ -320,66 +349,53 @@ void Update(void)
 			
 			DNA[row][col].val = 51+min((int)((float)size_sum*2),39);
 		}
-		cout << GetToxin_Antitoxin_Stats(Vibrios);
+		cout << Get_Sim_Stats(Vibrios,false);
+
+
+		
 		if(dodisplay)
 		{
 			ColourClones(Vibrios);
 			Display(nplanedisp,Vibrios,DNA,Genomesize,Transformant);
 		}
 	}
-	if(Time%summaryinterval==0)
+	int datainterval= 100;
+	if(Time%datainterval==0)
 	{
-		cout << "\n\n\nSummary at simulation time: " << Time << endl;
-		cout << Get_Genome_Stats(Vibrios) << endl;
-		
-		PrintMostAbundant(Vibrios);
-		cout << " " << endl;
-		//cout << PrintAverageToxinMobilities(Vibrios);
-		cout << PrintAverageARGMobilities(Vibrios);
-		
-		cout << endl << endl << endl;
-		cout << PrintAverageCoreMobilities(Vibrios);
-		cout << PrintAverageNCMobilities(Vibrios) << endl;
-		cout << endl << endl << endl;
-
-		dirbuf = folder + timefolder;
-		DrawSlide2((char*)dirbuf.c_str(),Vibrios, DNA, Genomesize,Transformant);
-		if(Time%100==0)
-		{
-			cout << ">\t";
-			for (int i=0;i<total_nr_args;i++)
-				cout << "f(ARG" << i << ")\t" << "[ARG" << i << "]\t";
-			cout << "AVGfit\tPopsize\tFract_IRs\tFract_Transposase"<< endl;
-		}
-	}
-
-//DATA STUFF
-
-	int datainterval= 1000;
+		Get_Sim_Stats(Vibrios,true);		
+		if(Time%5000<1000 && Time%5000>0) Dump_Grids(Vibrios,DNA);
+	}	
 	
-
-	if(Time%50==0)
+	datainterval= 1000;
+	if(Time%datainterval==0)
 	{
-		for(int i=0;i<total_nr_args;i++) 
-			{			
-				if(ABs_intake[i] == 0 && genrand_real1() < 0.02 && Time > 100000)
-				{
-					ABs_intake[i] = 1;
-					ABs_timer[i] = 1500+genrand_real1()*1000;
-				}
+		Dump_Genomes(Vibrios);
+		Dump_Grids(Vibrios,DNA);		
+	}
+		
+	
 				
-			}
-	}
 	
+		for(int i=0;i<total_nr_args;i++) 
+		{
+			if(ABs_intake[i] == 0 && Time%ab_interval==0 & Time >= ab_start)
+			{
+			ABs_intake[i] = ab_inf;
+			ABs_timer[i] = ab_duration;
+			}
+		}	
+	
+	
+
 	for(int i=0;i<total_nr_args;i++) 
 	{
 		
 		if(ABs_concentration[i]>0)
 		{
-			ABs_concentration[i] *= 0.975;
+			ABs_concentration[i] *= 0.975; // Antibiotic decay
 		}
-		if(ABs_intake[i]==1){ 
-			ABs_concentration[i] += 0.025;
+		if(ABs_intake[i]>0){ 
+			ABs_concentration[i] += ABs_intake[i];
 			ABs_timer[i]--;
 		}
 		if(ABs_timer[i] <= 0) {
