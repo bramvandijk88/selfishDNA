@@ -9,7 +9,7 @@ using namespace std;
 #include <time.h>
 #include <errno.h>
 #include <math.h>
-#include <grace_np.h>
+#include "grace_np.h"
 #include <unistd.h>
 #include <float.h>
 #include <limits.h>

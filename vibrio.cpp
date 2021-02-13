@@ -1,13 +1,13 @@
+// Import C libraries (Cash, math, iomanip) and custom functions (compete cells, degrade DNA, etc.)
 #include "clibs.hpp"
 #include "functions.hpp"
 #include <curses.h>
 #include <iomanip>
 
-static TYPE2** Vibrios;
-static TYPE2** Environment;
-static TYPE2** DNA;
-static TYPE2** Genomesize;
-static TYPE2** Transformant;
+static TYPE2** Vibrios;	// The TYPE2** (cash grid) on which bacterial cells live. Named after vibrionacaea because they're cool. 
+static TYPE2** DNA;		// The TYPE2** (cash grid) on which eDNA resides
+static TYPE2** Genomesize;	// Cash grid (visualisation only, -x)
+static TYPE2** Transformant; // Cash grid (visualisation only, -x)
 
 // Simulation stuff
 int myseed;
@@ -15,26 +15,20 @@ int myscale =2;
 
 // BIRTH/DEATH AND FITNESS STUFF (see par.txt)
 float death, birth, ab_penalty, birthNON, gene_cost, genome_size_cost;
-int max_internal_resource;																		// LS: What's this, for cases of growth on resource uptake ability?
-
+						
 // Mutations (see par.txt)
-float gene_loss, gene_dupl, tandem_dupl, tandem_del, inversions, gene_to_noncoding, noncoding_to_gene, mut_rate_scaling, gene_mob, gene_discovery;
+float gene_loss, gene_dupl, tandem_dupl, tandem_del, inversions, gene_to_noncoding, noncoding_to_gene, mut_rate_scaling, gene_mob, gene_discovery, fitness_effect_noness;
 
 // Toxins and antitoxins stuff
-int total_nr_args, init_nr_noncoding, init_nr_args, init_nr_coregenes;
+int init_nr_noncoding, init_nr_args, init_nr_HKgenes, init_nr_noness;
+
 float init_mob;
 
 //eDNA
 int diff;
 float degr;
 
-double extradeath, genediffusion;
-
-std::vector<double> ABs_concentration;
-std::vector<double> ABs_intake;
-std::vector<double> ABs_timer;
-
-
+double genediffusion;
 
 
 int dodisplay, opendisplay, summaryinterval, displayinterval, fieldsize, livegraphs;
@@ -43,12 +37,8 @@ int dodisplay, opendisplay, summaryinterval, displayinterval, fieldsize, livegra
 bool makemovie = 1; int moviecounter = 0; bool mixing = 0; bool diffusing = 0; bool mutation = 1; int genedisplay = 1;
 bool Graphs = 0; bool Output = 1; bool mobilitygathering = 1; bool getgenefrequencies = 1;
 
-string dumpfolder = "/dumps";
-string genedata = "/genedata";
-string specfolder = "/speciesfreq";
-string heatfolder = "/heatmaps";
-string timefolder = "/timeframes";
-string ancefolder = "/ancestor";
+string ancfolder; 
+
 string map_extension;
 string dirbuf;
 string folder;
@@ -62,13 +52,16 @@ bool mix = false;
 bool mixgrid = false;
 bool dohgt = true;
 bool dojump = true;
+bool sexual = false;
 float jumprate = 0.1;
 float uptakerate = 0.1;
+float transp_cost = 0.0;
 float break_chance = 0.0;
-float ab_inf = 0.025; // gives 1.0 given the default decay
-int ab_start = 200000;
-int ab_interval = 30000;
-int ab_duration = 15000;
+
+int start_sge_influx = 0;
+int stop_sge_influx = 0;
+
+set<Genome*> Ancestors;
 
 int dna_diff = 2;
 
@@ -88,14 +81,14 @@ void Initial(void)
 		if(readOut == "-Size") {fieldsize = atoi(argv_g[i+1]); cmd_fieldsize = true;}
 		if(readOut == "-Scale") {myscale = atoi(argv_g[i+1]);}
 
-		if(readOut == "-Diff") {genediffusion = atoi(argv_g[i+1]); cmd_eDNAdiffusion = true;}
+		if(readOut == "-Diff") {genediffusion = atof(argv_g[i+1]); cmd_eDNAdiffusion = true;}
 		if(readOut == "-Jumprate") {jumprate = atof(argv_g[i+1]);}
+		if(readOut == "-Sexual") {sexual = true;}
+		if(readOut == "-Cost") {transp_cost = atof(argv_g[i+1]);}		
 		if(readOut == "-BreakChance") {break_chance = atof(argv_g[i+1]);}
 		if(readOut == "-Uptakerate") {uptakerate = atof(argv_g[i+1]);}
-		if(readOut == "-ABinf") {ab_inf = atof(argv_g[i+1]);}
-		if(readOut == "-ABstart") {ab_start = atoi(argv_g[i+1]);}
-		if(readOut == "-ABinterval") {ab_interval = atoi(argv_g[i+1]);}
-		if(readOut == "-ABduration") {ab_duration = atoi(argv_g[i+1]);}
+		if(readOut == "-startInTra") {start_sge_influx = atoi(argv_g[i+1]);}
+		if(readOut == "-stopInTra") {stop_sge_influx = atoi(argv_g[i+1]);}
 		if(readOut == "-MixDNA") {mix = true; }
 		if(readOut == "-MixPop") {mixgrid = true; }
 		if(readOut == "-noHGT") {dohgt = false; }
@@ -109,11 +102,17 @@ void Initial(void)
 			map_extension = argv_g[i+1];
 			//folder = \"/mnt/d/Selfish_output/\" + currentDateTime() + \"_\" + map_extension;	// Paths to local storages
 			folder = "/mnt/d/Selfish_output/" + map_extension;	// Paths to local storages
-			string command = "mkdir -p " + folder;
+			ancfolder = folder+"/Ancestor_traces";
+			string command = "rm -rf " + folder;
+			system(command.c_str());
+			command = "mkdir -p " + folder;
+			system(command.c_str());
+			command = "mkdir -p " + ancfolder;
 			system(command.c_str());
 		}
 
   }
+  
 	for(int i = 0; i < (int)argc_g; i++)
 	{
 		if(readOut == "-t")
@@ -133,12 +132,10 @@ void Initial(void)
 		cout << "No output given, saved under NoName" << endl;
 		folder = "/home/brem/ARG_output/" + currentDateTime() + "_" + "NoName";
 	}
+	
 
-	string datafolder = folder+"/data";														//LS: makes data folder
-	string command_data = "mkdir -p " + datafolder;
-	system(command_data.c_str());
 
-	string model_folder = datafolder+"/Current_Model";					// LS: Current model and parameters are saved
+	string model_folder = folder+"/current_model_code";					// LS: Current model and parameters are saved
 	string command_model = "mkdir -p " + model_folder;
 	string command_copy = "cp -r ./* " + model_folder;
 	system(command_model.c_str());
@@ -150,36 +147,17 @@ void Initial(void)
   // cout << " writing into model file" << endl;
   // modelfile << " Here comes the current version of the model of this run" << endl;
 
-	if (mobilitygathering){
-	 	toxin_mobility_folder = datafolder+"/toxin_mobilities";					// LS: In here go files with mobility of every toxin (made the first datainterval timestep and appended the others)
-		string command_toxmob = "mkdir -p " + toxin_mobility_folder;
-		system(command_toxmob.c_str());
-
-		antitoxin_mobility_folder = datafolder+"/antitoxin_mobilities"; // LS: In here go files with mobility of every antitoxin
-		string command_antitoxmob = "mkdir -p " + antitoxin_mobility_folder;
-		system(command_antitoxmob.c_str());
-
-		coregene_mobility_folder = datafolder+"/coregene_mobilities"; // LS: In here go files with mobility of every coregene
-		string command_coremob = "mkdir -p " + coregene_mobility_folder;
-		system(command_coremob.c_str());
-  }
-  	if (getgenefrequencies){
-	 	frequencies_folder = datafolder+"/gene_frequencies";					// LS: In here go files with frequency of every gene (made the first datainterval timestep and appended the others)
-		string command_toxmob = "mkdir -p " + frequencies_folder;
-		system(command_toxmob.c_str());
-  	}
-
+	
 	ReadOptions("par.txt");								// Read file
  	InDat("%f", "death", (int*)&death);						// Get death rate from file
 	InDat("%f", "birth", (int*)&birth);
 	InDat("%f", "birthNON", (int*)&birthNON);
-	InDat("%f", "ab_penalty", (int*)&ab_penalty);
 	InDat("%d", "seed", (int*)&myseed);
-	InDat("%d", "max_internal_resource", (int*)&max_internal_resource);
-	InDat("%d", "total_nr_args", (int*)&total_nr_args);
-	InDat("%d", "init_nr_args", (int*)&init_nr_args);
 	InDat("%d", "init_nr_noncoding", (int*)&init_nr_noncoding);
-	InDat("%d", "init_nr_coregenes", (int*)&init_nr_coregenes);
+	InDat("%d", "init_nr_HKgenes", (int*)&init_nr_HKgenes);
+	InDat("%d", "init_nr_noness", (int*)&init_nr_noness);
+	InDat("%f", "fitness_effect_noness", (int*)&fitness_effect_noness);
+	
 	InDat("%f", "init_mob", (int*)&init_mob);
 	if(!cmd_fieldsize) InDat("%d", "fieldsize", (int*)&fieldsize);			// Get field size from file IF not already defined on command-line
 
@@ -215,11 +193,11 @@ void Initial(void)
     	ulseedG = time(0);
 	else ulseedG = myseed;
 
-	MaxTime = 300000;
+	MaxTime = 500000;
 	nrow = fieldsize;
 	ncol = fieldsize;
-	nplane = 5;
-    nplanedisp = 4;
+	nplane = 4;
+    nplanedisp = 3;
 	scale = myscale;
 	boundary = WRAP;
 	//boundaryvalue2 = (TYPE2){0,0,0,0,0,0.,0.,0.,0.,0.,{'S','S','S','S','S','S','S','S'}};
@@ -231,12 +209,11 @@ void InitialPlane(void)
   ReadOptions("par.txt");
   InDat("%f", "initial_density", (int*)&initdens);
 
-  MakePlane(&Vibrios,&DNA,&Environment,&Genomesize,&Transformant);
+  MakePlane(&Vibrios,&DNA,&Genomesize,&Transformant);
 
   InitialSet(Vibrios,1,0,2,initdens);								// Initial density of bacteria
-  for(int i=0;i<3;i++)
-  	RefreshEnvironment(Environment);							// Puts 3 circles of resource on the Resource plane
-  InitialiseGenomes(Vibrios, Environment, init_nr_args, total_nr_args, init_nr_coregenes, init_nr_noncoding);							// Initialises all pearl-on-a-string genomes for LIVING cells
+
+  InitialiseGenomes(Vibrios, init_nr_HKgenes, init_nr_noness,init_nr_noncoding);							// Initialises all pearl-on-a-string genomes for LIVING cells
   InitialiseDNAPlane(DNA);																																									// Every pixel gets an empty eDNA list
   //cout << endl << endl << " -= Start of simulation =- " << endl << endl;
 
@@ -252,37 +229,35 @@ void InitialPlane(void)
   for(int q = 51; q<= 90; q++) ColorRGB(q,0,((float)(q-51)/39.0)*(254),0);			// Black to Green colour gradient
   for(int q = 91; q<= 254; q++) ColorRGB(q,(int)ceil(genrand_real1()*200+55),(int)ceil(genrand_real1()*200+55),(int)ceil(genrand_real1()*200+55));    // Color 91 - 254 are "random" colours
   
-  ABs_concentration.assign(total_nr_args, 0.0);
-  ABs_intake.assign(total_nr_args, 0);
-   ABs_timer.assign(total_nr_args, 0);
 }
 
 void NextState(int row,int col)
 {
-	if(Vibrios[row][col].val>1){																// Strictly speaking > 91.
-        if(genrand_real1()< death + Vibrios[row][col].ab_effect)  		 // LS: so note, deathrate value is only toxin induced deathrate
+	if(Vibrios[row][col].val>1)
+	{	
+		// Random cell death with rate <death>								
+		// LS: Cells with too many transposases die, but note that this is not the mechanisms responsible for streamlining. 
+        if(genrand_real1()< death || !Vibrios[row][col].G->Viable() ||  Vibrios[row][col].G->transposases.size() > 1000)  		 
 		{
 			Vibrios[row][col].val = 1;											// 1 = Temporary dead cell, which is cleaned up and set to 0 later
-			if(dohgt) SpillDNA(Vibrios,DNA,row,col);
+			if(dohgt) SpillDNA(Vibrios,DNA,row,col);			
         }	
-		else if(genrand_real1() < jumprate)
+		else
 		{
 			bool integrated = false;
-			if(dojump) integrated = Vibrios[row][col].G->TransposonDynamics(break_chance);			
+			if(dojump) integrated = Vibrios[row][col].G->TransposonDynamics(NULL,jumprate,break_chance);			
 			// bool integrated=false;
 			if(integrated) 
 			{
 				Vibrios[row][col].G->transformant = 2;	
-				Vibrios[row][col].G->Create_Gene_Lists(total_nr_args);
-				Vibrios[row][col].G->CalculateCompStrength();		
+				Vibrios[row][col].G->Create_Gene_Lists();
+				Vibrios[row][col].G->CalculateCompStrength();
 			}
 		}
 	}
 	else if(Vibrios[row][col].val==0){ // && genrand_real1() < birth )			// LS: with birth at 1 this always happens
-        	CompeteAndReproduce(Vibrios,Environment,row,col);
-	}
-	
-
+        	CompeteAndReproduce(Vibrios,row,col);
+	}	
 }
 
 void DiffuseDNA(int row, int col)
@@ -291,14 +266,17 @@ void DiffuseDNA(int row, int col)
 	int pos=0;
 	bool V = FALSE;
 		for (fr_iter = DNA[row][col].DNA->Fragments->begin(); fr_iter != DNA[row][col].DNA->Fragments->end(); fr_iter++)
-		{
-			pos ++;
-			if(V) cout << "Swapping eDNAfragment at pos " << pos << endl;
-			int randneigh = genrand_int(1,8);
-			TYPE2* neigh = GetNeighborP(DNA,row,col,randneigh);
-			neigh->DNA->Fragments->push_back(*fr_iter);
-			fr_iter = DNA[row][col].DNA->Fragments->erase(fr_iter);
-			fr_iter--;
+		{			
+			if(genrand_real1() < genediffusion) 
+			{
+				pos ++;
+				if(V) cout << "Swapping eDNAfragment at pos " << pos << endl;
+				int randneigh = genrand_int(1,8);
+				TYPE2* neigh = GetNeighborP(DNA,row,col,randneigh);
+				neigh->DNA->Fragments->push_back(*fr_iter);
+				fr_iter = DNA[row][col].DNA->Fragments->erase(fr_iter);
+				fr_iter--;
+			}
 		}
 }
 
@@ -307,16 +285,16 @@ void Update(void)
 {
   	//if(Time == 50000) dohgt=false;		
 
-	CalculateABEffect(Vibrios);								// extra death due to toxin is calculated. Competitive strenght is calcutated if Genome changes. No explicit fitness
 	Synchronous(1,Vibrios);																//LS: note to self: holds next-state function/loop thingy
 	CleanUpTheDead(Vibrios, DNA);
 	
-	for(int i =0;i<genediffusion;i++)
-		Asynch_func(*DiffuseDNA);    		// Special diffusion stuff by Brem to diffuse (potentially) unique objects. W.i.p. Also see DiffuseParticles() below
+	
+	Asynch_func(*DiffuseDNA);    		// Special diffusion stuff by Brem to diffuse (potentially) unique objects. W.i.p. Also see DiffuseParticles() below
+	MDiffusion(Vibrios);
 	if(dohgt) 
 	{
 		for(int row=1; row<=nrow; row++)for(int col=1; col<=ncol; col++) DegradateDNA(DNA,row,col,degr); 
-		DoHGT(Vibrios,DNA,total_nr_args);
+		DoHGT(Vibrios,DNA);
 	}
 		
 		
@@ -325,10 +303,6 @@ void Update(void)
 	if(mixgrid) PerfectMix(Vibrios);
 	if(mix) PerfectMix(DNA);
 
-
-	
-	
-	
 	if(Time%displayinterval==0)
 	{
 		for(int row=1; row<=nrow; row++)
@@ -359,52 +333,26 @@ void Update(void)
 			Display(nplanedisp,Vibrios,DNA,Genomesize,Transformant);
 		}
 	}
-	int datainterval= 100;
+	int datainterval= 20;
 	if(Time%datainterval==0)
 	{
 		Get_Sim_Stats(Vibrios,true);		
-		if(Time%5000<1000 && Time%5000>0) Dump_Grids(Vibrios,DNA);
+		// PrintMostAbundant(Vibrios);
+		// if(Time%5000<1000 && Time%5000>0) Dump_Grids(Vibrios,DNA);
 	}	
 	
-	datainterval= 1000;
+	
+	datainterval= 100;
 	if(Time%datainterval==0)
 	{
+		PrintMostAbundant(Vibrios);		
 		Dump_Genomes(Vibrios);
 		Dump_Grids(Vibrios,DNA);		
 	}
-		
-	
-				
-	
-		for(int i=0;i<total_nr_args;i++) 
-		{
-			if(ABs_intake[i] == 0 && Time%ab_interval==0 & Time >= ab_start)
-			{
-			ABs_intake[i] = ab_inf;
-			ABs_timer[i] = ab_duration;
-			}
-		}	
-	
-	
-
-	for(int i=0;i<total_nr_args;i++) 
+	if(Time%1000==0)
 	{
 		
-		if(ABs_concentration[i]>0)
-		{
-			ABs_concentration[i] *= 0.975; // Antibiotic decay
-		}
-		if(ABs_intake[i]>0){ 
-			ABs_concentration[i] += ABs_intake[i];
-			ABs_timer[i]--;
-		}
-		if(ABs_timer[i] <= 0) {
-				ABs_intake[i] = 0;	
-				ABs_timer[i] = 0;
-			}	
+		AncestorTrace(Vibrios);
 	}
-		
-		#include "gotmouse.cpp"
-
-
+	#include "gotmouse.cpp" // For pausing the display / asking stats in interactive mode (-x)
 }

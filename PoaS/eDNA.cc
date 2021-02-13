@@ -80,11 +80,18 @@ void eDNA::Degradate(float degr)																		// When the cell dies, the DNA
 	}
 
 	int pos = 0;
+	int n = Fragments->size();
+	float density_dep_degr = degr; // + (1-degr)*n/(n+100);  // To keep transposons under control
+	// if(n>1)
+	// {
+	// cout << n << endl;
+	// cout << density_dep_degr << endl;
+	// }
 	for (fr_iter frit = Fragments->begin(); frit != Fragments->end(); frit++)
 	{
 		pos ++;
 
-		if(genrand_real1() < degr)								// default 0.1 LS: shouldn't these chances better be parameterised into the par file?
+		if(genrand_real1() < density_dep_degr)								// default 0.1 LS: shouldn't these chances better be parameterised into the par file?
 		{
 			if(V) cout << "Deleting eDNAfragment at pos " << pos << endl;
 			frit = DeleteFragment(frit);
@@ -115,4 +122,10 @@ eDNA::fr_iter eDNA::DeleteFragment(fr_iter frit)
 
 	frit = Fragments->erase(frit);
 	return frit;
+}
+
+
+bool eDNA::IsTransposase(Pearl *Pearl) const
+{
+	return (bool)(typeid(*Pearl) == typeid(Transposase));	// typeid determines the class of an object at runtime
 }

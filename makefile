@@ -23,7 +23,7 @@ RMDIR = rmdir
 OBJCASH = $(BREM_CASH)arithmetic.o $(BREM_CASH)basic.o $(BREM_CASH)color.o $(BREM_CASH)filter.o $(BREM_CASH)io.o $(BREM_CASH)logical.o \
 $(BREM_CASH)margolus.o $(BREM_CASH)movie.o $(BREM_CASH)neighbors.o $(BREM_CASH)noise.o $(BREM_CASH)png.o $(BREM_CASH)ps.o $(BREM_CASH)random.o $(BREM_CASH)shift.o\
 $(BREM_CASH)x11.o
-OBJPOAS = $(POAS)/Genome.o $(POAS)/Pearl.o $(POAS)/ARG.o $(POAS)/Toxin.o $(POAS)/Antitoxin.o $(POAS)/Core.o  $(POAS)/eDNA.o $(POAS)/Noncoding.o $(POAS)/Transposase.o
+OBJPOAS = $(POAS)/Genome.o $(POAS)/Pearl.o $(POAS)/HK.o $(POAS)/NonEss.o $(POAS)/eDNA.o $(POAS)/Noncoding.o $(POAS)/Transposase.o
 OBJCASH2 = $(BREM_CASH)cash2.o $(BREM_CASH)mersenne.o
 OBJMAIN = $(BREM_CASH)cash2-s.o
 

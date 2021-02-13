@@ -4,6 +4,7 @@
 #include <typeinfo>
 #include "Header.hh"
 #include "Genome.hh"
+#include "Transposase.hh"
 
 class eDNA
 {
@@ -17,6 +18,7 @@ class eDNA
 		void Degradate(float);
 
 		eDNA::fr_iter DeleteFragment(fr_iter fri);
+		bool IsTransposase(Pearl *Pearl) const;
 };
 
 #endif
