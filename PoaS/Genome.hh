@@ -41,7 +41,7 @@ class Genome
 
 		Genome();
 		~Genome();
-		void GenerateGenome(int init_nr_HKgenes, int nr_noness, int init_nr_noncoding, float gene_cost, float transp_cost, float genome_size_cost, float init_mob, float fitness_eff);
+		void GenerateGenome(int init_nr_HKgenes, int nr_noness, int init_nr_noncoding, int init_nr_tra, float gene_cost, float transp_cost, float genome_size_cost, float init_mob, float fitness_eff);
 
 		// Reproduce / copy parts of genomes
 		void CloneGenome(Genome *parent);

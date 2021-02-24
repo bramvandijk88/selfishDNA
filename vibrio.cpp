@@ -59,6 +59,7 @@ float transp_cost = 0.0;
 float break_chance = 0.0;
 
 int start_sge_influx = 0;
+double sge_influx = 0.0;
 int stop_sge_influx = 0;
 
 set<Genome*> Ancestors;
@@ -89,6 +90,7 @@ void Initial(void)
 		if(readOut == "-Uptakerate") {uptakerate = atof(argv_g[i+1]);}
 		if(readOut == "-startInTra") {start_sge_influx = atoi(argv_g[i+1]);}
 		if(readOut == "-stopInTra") {stop_sge_influx = atoi(argv_g[i+1]);}
+		if(readOut == "-rateInTra") {sge_influx = atof(argv_g[i+1]);}
 		if(readOut == "-MixDNA") {mix = true; }
 		if(readOut == "-MixPop") {mixgrid = true; }
 		if(readOut == "-noHGT") {dohgt = false; }
@@ -187,6 +189,8 @@ void Initial(void)
 	{
 		readOut = (char*)argv_g[i];
 		if(readOut == "-Seed") {myseed = atoi(argv_g[i+1]);}
+		if(readOut == "-Disco") {gene_discovery = atof(argv_g[i+1]);}
+
         }
 	// Code below takes seed from the parameter file, or chooses time as a seed if this parameter file contains a 0 as seed (this seed is written to a file named seed.txt)
 	if(myseed==0)
@@ -197,7 +201,7 @@ void Initial(void)
 	nrow = fieldsize;
 	ncol = fieldsize;
 	nplane = 4;
-    nplanedisp = 3;
+    nplanedisp = 4;
 	scale = myscale;
 	boundary = WRAP;
 	//boundaryvalue2 = (TYPE2){0,0,0,0,0,0.,0.,0.,0.,0.,{'S','S','S','S','S','S','S','S'}};
@@ -237,7 +241,9 @@ void NextState(int row,int col)
 	{	
 		// Random cell death with rate <death>								
 		// LS: Cells with too many transposases die, but note that this is not the mechanisms responsible for streamlining. 
-        if(genrand_real1()< death || !Vibrios[row][col].G->Viable() ||  Vibrios[row][col].G->transposases.size() > 1000)  		 
+		//if(genrand_real1()< death || Vibrios[row][col].G->transposases.size() > 1000)  		 
+        //if(genrand_real1()< death || !Vibrios[row][col].G->Viable() ||  Vibrios[row][col].G->transposases.size() > 1000) 
+		if(genrand_real1() < death || !Vibrios[row][col].G->Viable() )  		 		
 		{
 			Vibrios[row][col].val = 1;											// 1 = Temporary dead cell, which is cleaned up and set to 0 later
 			if(dohgt) SpillDNA(Vibrios,DNA,row,col);			
@@ -283,23 +289,22 @@ void DiffuseDNA(int row, int col)
 
 void Update(void)
 {
-  	//if(Time == 50000) dohgt=false;		
 
 	Synchronous(1,Vibrios);																//LS: note to self: holds next-state function/loop thingy
 	CleanUpTheDead(Vibrios, DNA);
 	
 	
 	Asynch_func(*DiffuseDNA);    		// Special diffusion stuff by Brem to diffuse (potentially) unique objects. W.i.p. Also see DiffuseParticles() below
-	MDiffusion(Vibrios);
+	
 	if(dohgt) 
 	{
 		for(int row=1; row<=nrow; row++)for(int col=1; col<=ncol; col++) DegradateDNA(DNA,row,col,degr); 
+		if(Time > start_sge_influx && Time < stop_sge_influx) for(int row=1; row<=nrow; row++)for(int col=1; col<=ncol; col++) InfluxDNA(DNA,row,col,sge_influx); 
 		DoHGT(Vibrios,DNA);
 	}
 		
 		
 	AgeGenes(Vibrios);
-	//if (Time > 600000) PerfectMix(Vibrios);
 	if(mixgrid) PerfectMix(Vibrios);
 	if(mix) PerfectMix(DNA);
 
@@ -310,8 +315,9 @@ void Update(void)
 		{
 			if(Vibrios[row][col].val>0)
 			{
-				Genomesize[row][col].val = 11+min((float)30.0*(Vibrios[row][col].G->transposases.size()>0),(float)39.0);		
-				Transformant[row][col].val = Vibrios[row][col].G->transformant;		
+				Genomesize[row][col].val = 11+min((float)30.0*(Vibrios[row][col].G->transposases.size()>0),(float)39.0);	
+				Transformant[row][col].val = 51+min((float)0.5*(Vibrios[row][col].G->StringOfPearls->size()),(float)39.0);		
+				//Transformant[row][col].val = Vibrios[row][col].G->transformant;		
 			}
 			else
 			{
@@ -350,8 +356,7 @@ void Update(void)
 		Dump_Grids(Vibrios,DNA);		
 	}
 	if(Time%1000==0)
-	{
-		
+	{	
 		AncestorTrace(Vibrios);
 	}
 	#include "gotmouse.cpp" // For pausing the display / asking stats in interactive mode (-x)

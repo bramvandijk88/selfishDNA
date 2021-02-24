@@ -41,7 +41,8 @@ Genome::~Genome()					// Deconstructor deletes the genome and all Pearls it's po
 			CloneGenome = clone genome from parent (or part of genome)
 			CopyPartOfGenome = After making a new (empty genome), this copies part of a GIVEN genome to this genome
 																				*********/
-void Genome::GenerateGenome(int init_nr_hkgenes, int init_nr_noness, int init_nr_noncoding, float gene_cost, float transp_cost, float genome_size_cost, float init_mob, float effect_noness)
+void Genome::GenerateGenome(int init_nr_hkgenes, int init_nr_noness, int init_nr_noncoding, int init_nr_tra, 
+							float gene_cost, float transp_cost, float genome_size_cost, float init_mob, float effect_noness)
 {
 	gene_cost_ = gene_cost;
 	transp_cost_ = transp_cost;
@@ -83,7 +84,8 @@ void Genome::GenerateGenome(int init_nr_hkgenes, int init_nr_noness, int init_nr
 		StringOfPearls->push_back(noness);  	    	// Add pointer to hk to list
 		genomesize_++;		
 	}
-	int nr_nc = genrand_real1()*init_nr_noncoding*2;
+	//int nr_nc = genrand_real1()*init_nr_noncoding*2;
+	int nr_nc = init_nr_noncoding;
 	for(i=0;i<nr_nc;i++)
 	{
 		nc = new Noncoding(-1);					// Default the "type" of a non-coding part corresponds to a random type of toxin/antitoxin
@@ -102,7 +104,7 @@ void Genome::GenerateGenome(int init_nr_hkgenes, int init_nr_noness, int init_nr
 	   StringOfPearls->assign( Vec.begin(), Vec.end() );
 
 	
-		if(genrand_real1() < 0.0)
+		for(i=0;i<init_nr_tra;i++)
 		{
 			iter ii = StringOfPearls->begin();
 			int randpos = (int)(genrand_real1()*genomesize_);
@@ -725,7 +727,9 @@ bool Genome::GeneDiscovery(double gendisc)
 	}	
 
 	//cout << "GeneDiscovery called" << endl;
-	if(genrand_real1()<gendisc)
+	int nr_discovered = 0;
+	while(genrand_real1()<gendisc) nr_discovered++;
+	for(int i = 0; i < nr_discovered; i++)
 	{
 		if(V) cout << ListContent(NULL) << endl;
 		if(V) cout << "Discovering transposon with chance " << gendisc << endl;
@@ -739,7 +743,7 @@ bool Genome::GeneDiscovery(double gendisc)
 		// Transposon discovered
 		if(V) cout << "Type: " << type << " van de " << HKgenes_ << endl;
 		tra = new Transposase(type);						// Let toxin point to a new Toxin
-        tra->mobility = genrand_real1();	// Newly introduced gets random mobility	
+        tra->mobility = 0.75+0.25*genrand_real1();	// Newly introduced gets random mobility	
 		ii = StringOfPearls->insert(ii,tra);  		     	// Add pointer to toxin to pearl-list
 		
 		genomesize_++;

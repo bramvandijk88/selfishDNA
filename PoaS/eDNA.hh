@@ -16,6 +16,7 @@ class eDNA
 		~eDNA();
 		void FragmentiseGenome(Genome * G, float fraction);
 		void Degradate(float);
+		void InfluxDNA(float);
 
 		eDNA::fr_iter DeleteFragment(fr_iter fri);
 		bool IsTransposase(Pearl *Pearl) const;

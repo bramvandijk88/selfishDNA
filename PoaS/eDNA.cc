@@ -43,13 +43,13 @@ void eDNA::FragmentiseGenome(Genome * G, float fraction)																		// Whe
 	do  																			// Do while is like a normal while loop, but ensures the thing is executed at least once
 	{
 		i_start = i_end;	
-		fragsize = genrand_int(min(3,stringsize),(min(8,stringsize)));			// NOTE HARD CODED, ALSO CHANGE IN JUMP FUNCTION
+		fragsize = genrand_int(min(3,stringsize),(min(8,stringsize)));			// Fragments of 3-8 pearls long are being spilled into the environment
 		
 		if(V)cout << stringsize << endl;
 		if(V)cout << fragsize << endl;
 
 		list<Pearl*> DNAfragment; 	//(i_start, i_end);
-		G->CopyPartOfGenomeToTempList(i_start,fragsize,DNAfragment);
+		G->CopyPartOfGenomeToTempList(i_start,fragsize,DNAfragment);	
 		if(genrand_real1() < fraction) Fragments->push_back(DNAfragment);
 		stringsize-=fragsize;
 		DNAfragment.clear();
@@ -104,6 +104,41 @@ void eDNA::Degradate(float degr)																		// When the cell dies, the DNA
 		cout << Fragments->size() << endl;
 		cout << endl;
 	}
+}
+
+void eDNA::InfluxDNA(float inf)																		// When the cell dies, the DNA is chopped up before it's dropped on the grid
+{
+	bool V = FALSE;
+
+	
+	if(genrand_real1() < inf)
+	{
+		if(V)
+		{
+			cout << "Before inf: " << endl;
+			cout << Fragments->size() << endl;
+			cout << endl;
+		}
+
+		list<Pearl*> DNAfragment; 	//(i_start, i_end);
+		Transposase *tra;		
+		int type = 0;								
+		tra = new Transposase(type);						// Let toxin point to a new Toxin
+        tra->mobility = genrand_real1();	// Newly introduced gets random mobility	
+		DNAfragment.push_back(tra);
+		Fragments->push_back(DNAfragment);
+
+			
+		if(V)
+		{
+			cout << "AFter inf: " << endl;
+			cout << Fragments->size() << endl;
+			cout << endl;
+			cout << endl << endl;
+		}
+	}
+
+	
 }
 
 eDNA::fr_iter eDNA::DeleteFragment(fr_iter frit)

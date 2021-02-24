@@ -39,7 +39,12 @@ void InitialiseGenomes(TYPE2** vibrios, int init_nr_coregenes, int init_nr_nones
 			{
 				if(V) cout << "Initialising genome for individual at " << row << " " << col << endl;					//LS: using " " just to space the numbers?
 				vibrios[row][col].G = new Genome();				
-				vibrios[row][col].G->GenerateGenome(init_nr_coregenes, init_nr_noness,  init_nr_noncoding, gene_cost, transp_cost, genome_size_cost, init_mob, fitness_effect_noness);
+				if(row>nrow/2-15 && row < nrow/2+15 && col > ncol/2-15 && col < ncol/2+15)
+				{
+					vibrios[row][col].G->GenerateGenome(init_nr_coregenes, init_nr_noness,  init_nr_noncoding, 0, gene_cost, transp_cost, genome_size_cost, init_mob, fitness_effect_noness);
+				}
+				else 
+					vibrios[row][col].G->GenerateGenome(init_nr_coregenes, init_nr_noness,  init_nr_noncoding, 0, gene_cost, transp_cost, genome_size_cost, init_mob, fitness_effect_noness);
 				vibrios[row][col].G->generation_ = 1;
 				vibrios[row][col].val = genrand_int(52,255);
 				if(V) cout << vibrios[row][col].G->ListContent(NULL) << endl;
@@ -114,6 +119,12 @@ void DegradateDNA(TYPE2** DNA, int row, int col, float degr)
 {
 	DNA[row][col].DNA->Degradate(degr);
 }
+// Every fragment has a chance to disappear --- LS: shouldn't this be dependent on their length?
+void InfluxDNA(TYPE2** DNA, int row, int col, float inf)
+{
+	DNA[row][col].DNA->InfluxDNA(inf);
+}
+
 
 // Applies HGT for an invididual
 void DoHGT(TYPE2 **vibrios, TYPE2** DNA)
@@ -236,24 +247,29 @@ void AncestorTrace(TYPE2 ** vibrios)
   	file.open (filename.c_str(), ios::app);
 
 	set<Genome*> Not_extinct; 
-	
+	int num = 1;
 
-	file << "row\tcol\tgenome\tgeneration\tnr_hk\tnr_tra\tnr_noness\trowcoltime" << endl;
+	file << "row\tcol\tgenome\tgeneration\tnr_hk\tnr_tra\tnr_noness\trowcoltime\tnum" << endl;
 	for (int row=1; row <= nrow; row++)
 	{
 		for (int col=1; col <= ncol; col++)
 		{
 			if(vibrios[row][col].val > 1)						// Val 1 are the cells that died last update
 			{
-				bool save = genrand_real1()<0.01; 				// Only trace one in every 100 cells to save diskspace. 
+				bool save = genrand_real1()<0.01; 				// Only trace one in every 20 cells to save diskspace. 
 				Not_extinct.insert(vibrios[row][col].G);
 				Genome* anc = vibrios[row][col].G->parent;
 				while(anc != NULL)
 				{
 					Not_extinct.insert(anc);
-					if(save) file << row << "\t" << col << "\t" << anc->GenomeAtBirth << "\t" << anc->generation_ << "\t" << anc->HKgenes.size() << "\t" << anc->transposases.size() << "\t" << anc->nonessential.size() << "\t" << anc->rowcoltime << endl;
+					if(save && num <= 100) {
+						file << row << "\t" << col << "\t" << anc->GenomeAtBirth << "\t" << anc->generation_ << "\t" << anc->HKgenes.size() << "\t" << anc->transposases.size() << "\t" << anc->nonessential.size() << "\t" << anc->rowcoltime << "\t" << num << endl;					
+						num++;
+					}
 					anc = anc->parent;
+					
 				}
+				if(num == 100) break;
 			}
 		}
 	}
