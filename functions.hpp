@@ -39,9 +39,9 @@ void InitialiseGenomes(TYPE2** vibrios, int init_nr_coregenes, int init_nr_nones
 			{
 				if(V) cout << "Initialising genome for individual at " << row << " " << col << endl;					//LS: using " " just to space the numbers?
 				vibrios[row][col].G = new Genome();				
-				if(row>nrow/2-15 && row < nrow/2+15 && col > ncol/2-15 && col < ncol/2+15)
+				if(row>nrow/2-5 && row < nrow/2+5 && col > ncol/2-5 && col < ncol/2+5)
 				{
-					vibrios[row][col].G->GenerateGenome(init_nr_coregenes, init_nr_noness,  init_nr_noncoding, 0, gene_cost, transp_cost, genome_size_cost, init_mob, fitness_effect_noness);
+					vibrios[row][col].G->GenerateGenome(init_nr_coregenes, init_nr_noness,  init_nr_noncoding, 1, gene_cost, transp_cost, genome_size_cost, init_mob, fitness_effect_noness);
 				}
 				else 
 					vibrios[row][col].G->GenerateGenome(init_nr_coregenes, init_nr_noness,  init_nr_noncoding, 0, gene_cost, transp_cost, genome_size_cost, init_mob, fitness_effect_noness);
@@ -256,20 +256,19 @@ void AncestorTrace(TYPE2 ** vibrios)
 		{
 			if(vibrios[row][col].val > 1)						// Val 1 are the cells that died last update
 			{
-				bool save = genrand_real1()<0.01; 				// Only trace one in every 20 cells to save diskspace. 
+				bool save = genrand_real1()<0.05; 				// Only trace one in every 20 cells to save diskspace. 
+				if(num>100) save = FALSE;
 				Not_extinct.insert(vibrios[row][col].G);
 				Genome* anc = vibrios[row][col].G->parent;
 				while(anc != NULL)
 				{
 					Not_extinct.insert(anc);
-					if(save && num <= 100) {
-						file << row << "\t" << col << "\t" << anc->GenomeAtBirth << "\t" << anc->generation_ << "\t" << anc->HKgenes.size() << "\t" << anc->transposases.size() << "\t" << anc->nonessential.size() << "\t" << anc->rowcoltime << "\t" << num << endl;					
-						num++;
+					if(save) {
+						file << row << "\t" << col << "\t" << anc->GenomeAtBirth << "\t" << anc->generation_ << "\t" << anc->HKgenes.size() << "\t" << anc->transposases.size() << "\t" << anc->nonessential.size() << "\t" << anc->rowcoltime << "\t" << num << endl;											
 					}
-					anc = anc->parent;
-					
+					anc = anc->parent;					
 				}
-				if(num == 100) break;
+				num++;
 			}
 		}
 	}

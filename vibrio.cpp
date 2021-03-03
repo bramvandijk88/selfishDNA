@@ -185,19 +185,28 @@ void Initial(void)
 	InDat("%d", "displayinterval", (int*)&displayinterval);
 	InDat("%d", "summaryinterval", (int*)&summaryinterval);
 
+	
+	ofstream file;
+  	stringstream filepath;
+  	filepath  << folder << "/command.txt";
+  	string filename = filepath.str();
+  	file.open (filename.c_str(), ios::app);
+
 	for(int i = 0; i < (int)argc_g; i++)
 	{
 		readOut = (char*)argv_g[i];
+		file << readOut << " ";
 		if(readOut == "-Seed") {myseed = atoi(argv_g[i+1]);}
 		if(readOut == "-Disco") {gene_discovery = atof(argv_g[i+1]);}
 
-        }
+	}
+	file.close();
 	// Code below takes seed from the parameter file, or chooses time as a seed if this parameter file contains a 0 as seed (this seed is written to a file named seed.txt)
 	if(myseed==0)
     	ulseedG = time(0);
 	else ulseedG = myseed;
 
-	MaxTime = 500000;
+	MaxTime = 200000;
 	nrow = fieldsize;
 	ncol = fieldsize;
 	nplane = 4;

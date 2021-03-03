@@ -250,6 +250,9 @@ void Genome::CopyPartOfGenomeToTempList(iter begin,int size,list<Pearl*> &String
 bool Genome::Viable()
 {
 	bool V = false;
+	// cout << ListContent(NULL) << endl;
+	// cout << compstrength << endl;
+	if(compstrength<=0.0) { return false; }
 	Create_Gene_Lists();
 	list<int> uniquehks;
 	if(HKgenes_ > 0)
@@ -273,7 +276,7 @@ void Genome::CalculateCompStrength()
 				compstrength = 0.0;
 				extra_death = 1.0;
 			}
-			else if(Viable())			// A) Check if all hk genes exist in genome LS:!! nu mag je niet meer unieke HKgenes hebben dan het minimum noodzakelijk?!?
+			else 			// A) Check if all hk genes exist in genome LS:!! nu mag je niet meer unieke HKgenes hebben dan het minimum noodzakelijk?!?
 			{
 				if(V) cout << "Determine fitness because all hk genes are present" << endl;					
 
@@ -290,7 +293,7 @@ void Genome::CalculateCompStrength()
 				if(V) cout << "Fitness basis set to " << compstrength  << endl;
 				int HKgenes_redundant = 0;
 				if(HKgenes.size() > HKgenes_) HKgenes_redundant = HKgenes.size() - HKgenes_;				
-				HKgenes_redundant = 0;
+				//HKgenes_redundant = 0;
 				if(V) cout << "genes:" << HKgenes_redundant+nonessential.size() << endl;
 				compstrength -= (HKgenes_redundant+nonessential.size())*gene_cost_;
 				if(V) cout << "Transposases:" << transposases.size() << endl;
@@ -303,11 +306,7 @@ void Genome::CalculateCompStrength()
 				compstrength = max(compstrength,0.0);
 				
 			}
-			else
-			{
-				compstrength = 0.0;
-				extra_death = 1.0;
-			}
+
 			if(V)cout << "Fitness set to " << compstrength << endl;
 
 }

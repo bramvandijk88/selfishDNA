@@ -1,19 +1,19 @@
 #OPTION                         #VALUE        #EXPLANATION
-initial_density                 0.01          # Percentage of gridpoints filled at start
+initial_density                 1.00          # Percentage of gridpoints filled at start
 
 init_nr_HKgenes                 10           #                       # Nr of hk genes at initialisation AND needed. E.g. if 5, HK1, HK2, HK3, HK4, and HK5 are needed for the cell to replicate.
 init_nr_noness                  0
 fitness_effect_noness           0.0
-init_nr_noncoding                0
-init_mob                        0.95             # Mobility of initial transposons (if enabled)
+init_nr_noncoding               30
+init_mob                        0.95                                   # Mobility of initial transposons (if enabled)
 fieldsize                       50          #250
 seed 				            57
 
 # BIRTH/DEATH AND FITNESS STUFF
-birth                           1.0             #1.0                      #
-birthNON                        25              #20                       # Scaling the chance that nothing happens during competition (no reproduction). The higher this number, the more the simulation approximates continuous time. 
-death                           0.02            #0.05                     #
-gene_cost                       0.000           #0.05/0.03                # Gene costs for expressed genes (house-keeping)
+birth                           1.0             #1.0                   #
+birthNON                        80              #20                    # Scaling the chance that nothing happens during competition (no reproduction). The higher this number, the more the simulation approximates continuous time. 
+death                           0.02            #0.05                  #
+gene_cost                       0.00           #0.05/0.03              # Gene costs for expressed genes (house-keeping)
 genome_size_cost                0.000                                  # OPTIONAL Costs per pearl for total genome size [includes non-coding]
 
 # MUTATION RATES
@@ -30,8 +30,8 @@ gene_discovery                  0.01	    #0.00005
 
 # eDNA PLANE THINGS
 
-degr							0.05									# DNA degradation rate
-diff						    2										# frequency diff per timestep (int) (Bremdefault =3)
+degr							0.02									# DNA degradation rate
+diff						    0.01									# frequency diff per timestep (int) or probability per timestep (float < 1) 
 
 #DISPLAY THINGIES
 dodisplay                       1										# Boolean TRUE (1) or FALSE(0)
