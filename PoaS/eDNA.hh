@@ -20,6 +20,7 @@ class eDNA
 
 		eDNA::fr_iter DeleteFragment(fr_iter fri);
 		bool IsTransposase(Pearl *Pearl) const;
+		bool HasTransposase(list<Pearl*>* frag);
 };
 
 #endif

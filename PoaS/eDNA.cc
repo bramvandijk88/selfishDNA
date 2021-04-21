@@ -50,7 +50,7 @@ void eDNA::FragmentiseGenome(Genome * G, float fraction)																		// Whe
 
 		list<Pearl*> DNAfragment; 	//(i_start, i_end);
 		G->CopyPartOfGenomeToTempList(i_start,fragsize,DNAfragment);	
-		if(genrand_real1() < fraction) Fragments->push_back(DNAfragment);
+		if(genrand_real1() < fraction && HasTransposase(&DNAfragment)) Fragments->push_back(DNAfragment);
 		stringsize-=fragsize;
 		DNAfragment.clear();
 		advance(i_end,fragsize);
@@ -157,6 +157,21 @@ eDNA::fr_iter eDNA::DeleteFragment(fr_iter frit)
 
 	frit = Fragments->erase(frit);
 	return frit;
+}
+
+bool eDNA::HasTransposase(list<Pearl*> *frag)
+{
+	bool V = FALSE;
+	iter it;
+
+	it = frag->begin();
+	while(it!=frag->end())
+	{
+		if(IsTransposase(*it)) return true;
+		it++;
+	}
+	return false;
+
 }
 
 

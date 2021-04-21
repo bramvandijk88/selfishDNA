@@ -35,7 +35,7 @@ int dodisplay, opendisplay, summaryinterval, displayinterval, fieldsize, livegra
 
 // Saving/plotting vars below
 bool makemovie = 1; int moviecounter = 0; bool mixing = 0; bool diffusing = 0; bool mutation = 1; int genedisplay = 1;
-bool Graphs = 0; bool Output = 1; bool mobilitygathering = 1; bool getgenefrequencies = 1;
+bool Graphs = 0; bool Output = 1; bool mobilitygathering = 1; bool getgenefrequencies = 1; bool extinct = false;
 
 string ancfolder; 
 
@@ -191,14 +191,19 @@ void Initial(void)
   	filepath  << folder << "/command.txt";
   	string filename = filepath.str();
   	file.open (filename.c_str(), ios::app);
-
+	MaxTime = 200000;
 	for(int i = 0; i < (int)argc_g; i++)
 	{
 		readOut = (char*)argv_g[i];
 		file << readOut << " ";
 		if(readOut == "-Seed") {myseed = atoi(argv_g[i+1]);}
 		if(readOut == "-Disco") {gene_discovery = atof(argv_g[i+1]);}
-
+		if(readOut == "-Phi") {init_mob = atof(argv_g[i+1]);}	
+		if(readOut == "-Noncoding") {init_nr_noncoding = atoi(argv_g[i+1]);}	
+		if(readOut == "-HK") {init_nr_HKgenes = atoi(argv_g[i+1]);}	
+		if(readOut == "-MaxTime") {MaxTime = atoi(argv_g[i+1]);}	
+		if(readOut == "-Phi") {init_mob = atof(argv_g[i+1]);}	
+		if(readOut == "-Non") {birthNON = atof(argv_g[i+1]);}
 	}
 	file.close();
 	// Code below takes seed from the parameter file, or chooses time as a seed if this parameter file contains a 0 as seed (this seed is written to a file named seed.txt)
@@ -206,7 +211,7 @@ void Initial(void)
     	ulseedG = time(0);
 	else ulseedG = myseed;
 
-	MaxTime = 200000;
+	
 	nrow = fieldsize;
 	ncol = fieldsize;
 	nplane = 4;
@@ -252,6 +257,7 @@ void NextState(int row,int col)
 		// LS: Cells with too many transposases die, but note that this is not the mechanisms responsible for streamlining. 
 		//if(genrand_real1()< death || Vibrios[row][col].G->transposases.size() > 1000)  		 
         //if(genrand_real1()< death || !Vibrios[row][col].G->Viable() ||  Vibrios[row][col].G->transposases.size() > 1000) 
+		if(Vibrios[row][col].G->transposases.size()>0) Vibrios[row][col].G->time_infected_++;
 		if(genrand_real1() < death || !Vibrios[row][col].G->Viable() )  		 		
 		{
 			Vibrios[row][col].val = 1;											// 1 = Temporary dead cell, which is cleaned up and set to 0 later
@@ -300,6 +306,8 @@ void Update(void)
 {
 
 	Synchronous(1,Vibrios);																//LS: note to self: holds next-state function/loop thingy
+	if(Time%1000==0) AncestorTrace(Vibrios);
+	
 	CleanUpTheDead(Vibrios, DNA);
 	
 	
@@ -316,7 +324,7 @@ void Update(void)
 	AgeGenes(Vibrios);
 	if(mixgrid) PerfectMix(Vibrios);
 	if(mix) PerfectMix(DNA);
-
+	if(Time>100000) dohgt=false;
 	if(Time%displayinterval==0)
 	{
 		for(int row=1; row<=nrow; row++)
@@ -338,7 +346,7 @@ void Update(void)
 			
 			DNA[row][col].val = 51+min((int)((float)size_sum*2),39);
 		}
-		cout << Get_Sim_Stats(Vibrios,false);
+		//cout << Get_Sim_Stats(Vibrios,false);
 
 
 		
@@ -348,7 +356,7 @@ void Update(void)
 			Display(nplanedisp,Vibrios,DNA,Genomesize,Transformant);
 		}
 	}
-	int datainterval= 20;
+	int datainterval= 50;
 	if(Time%datainterval==0)
 	{
 		Get_Sim_Stats(Vibrios,true);		
@@ -357,16 +365,18 @@ void Update(void)
 	}	
 	
 	
-	datainterval= 100;
+	datainterval= 25;
 	if(Time%datainterval==0)
 	{
-		PrintMostAbundant(Vibrios);		
+		//PrintMostAbundant(Vibrios);		
 		Dump_Genomes(Vibrios);
 		Dump_Grids(Vibrios,DNA);		
 	}
-	if(Time%1000==0)
-	{	
-		AncestorTrace(Vibrios);
-	}
+	
+	//if(Time == MaxTime || extinct)
+	if(Time == MaxTime)
+	{
+		exit(0);
+	} 
 	#include "gotmouse.cpp" // For pausing the display / asking stats in interactive mode (-x)
 }

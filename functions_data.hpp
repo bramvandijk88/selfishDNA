@@ -2,6 +2,7 @@ extern int nrow;
 extern int ncol;
 extern int Time;
 extern bool Graphs;
+extern bool extinct;
 
 extern int total_nr_args;
 extern int init_nr_coregenes;
@@ -40,6 +41,8 @@ string Get_Sim_Stats(TYPE2 **vibrios,bool save)
     int num_hk_pearls=0;
     int num_arg_pearls=0;
     int num_ne_pearls=0;
+    int sum_time_infected = 0;
+    int num_infected = 0;
     Noncoding* nc;
     Transposase* tra;
 
@@ -52,6 +55,11 @@ string Get_Sim_Stats(TYPE2 **vibrios,bool save)
             {
                 pop_size++;
                 sumtra += vibrios[row][col].G->transposases.size();
+                if(vibrios[row][col].G->time_infected_ > 0) 
+                {
+                  sum_time_infected += vibrios[row][col].G->time_infected_;
+                  num_infected++;
+                }
                 sumtrans += vibrios[row][col].G->transformant==1;
                 sumtrans2 += vibrios[row][col].G->transformant==2;
 		            sumfit += vibrios[row][col].G->compstrength;
@@ -96,7 +104,7 @@ string Get_Sim_Stats(TYPE2 **vibrios,bool save)
     }
 
     stringstream genestats;
-    if(pop_size == 0) {cout << "Shutting down simulation as no more cells are alive" << endl; exit(0); }
+
     
     float fract_TEs = (float)num_TEs/pop_size;
     float fract_tra = (float)sumtra/pop_size;
@@ -114,15 +122,15 @@ string Get_Sim_Stats(TYPE2 **vibrios,bool save)
     if(Time==0)
     {
       //genestats << ">";
-      genestats << "Time\tAVG_g\tAVG_f\tPopsize\tFracHK\tFracNE\tFracTra\tFractNC\tHGT_hk\tJump_hk\tHGT_tra\tJump_tra\tPhi\t";
+      genestats << "Time\tAVG_g\tAVG_f\tPopsize\tFracHK\tFracNE\tFracTra\tFractNC\tHGT_hk\tJump_hk\tHGT_tra\tJump_tra\tPhi\tTime_infected\t";
       
       genestats << "\n";
 		}
     
-    genestats << fixed << setprecision(4) << Time << "\t" << (float)sum_genomesize/pop_size << "\t";
+    genestats << fixed << setprecision(6) << Time << "\t" << (float)sum_genomesize/pop_size << "\t";
     
     genestats << sumfit/pop_size << "\t" << pop_size << "\t" << (float)num_hk_pearls/pop_size << "\t" << fract_ne << "\t" << fract_tra << "\t" << fract_nc << "\t";
-    genestats << fract_hgt_hk << "\t" << fract_jump_hk << "\t" << fract_hgt_tra << "\t" << fract_jump_tra << "\t" << (float)sum_mobility/sumtra << "\t";
+    genestats << fract_hgt_hk << "\t" << fract_jump_hk << "\t" << fract_hgt_tra << "\t" << fract_jump_tra << "\t" << (float)sum_mobility/sumtra << "\t" << (float)sum_time_infected/num_infected << "\t";
 
     genestats << endl;
     string returnstring;
@@ -150,6 +158,12 @@ string Get_Sim_Stats(TYPE2 **vibrios,bool save)
     file << returnstring;
     file.close();
   }
+  if(pop_size == 0 || fract_tra == 0.0) 
+  { 
+      // cout << "Shutting down simulation as no more cells are alive or transposons died out" << endl; 
+      extinct = true;
+  }
+ 
   return returnstring;
 }
 
@@ -212,14 +226,21 @@ void Dump_Grids(TYPE2 **vibrios, TYPE2 **dna)
   filepath6  << folder << "/NumTransposonExt.dat";
   filename = filepath6.str();
   file6.open (filename.c_str(), ios::app);
+
+  ofstream file7;
+  stringstream filepath7;
+  filepath7  << folder << "/Gsize.dat";
+  filename = filepath7.str();
+  file7.open (filename.c_str(), ios::app);
   
 
   if(Time==0) file << "Time\trow\tcol\tnum_transposons" << endl;
   if(Time==0) file2 << "Time\trow\tcol\ttransformant_type" << endl;
   if(Time==0) file3 << "Time\trow\tcol\tval" << endl;
-  if(Time==0) file4 << "Time\trow\tcol\tmobility" << endl;
+  if(Time==0) file4 << "Time\trow\tcol\tmobility" << endl;  
   if(Time==0) file5 << "Time\trow\tcol\tnum_frags" << endl;
   if(Time==0) file6 << "Time\trow\tcol\tnum_transposons\tnum_pearls" << endl;
+  if(Time==0) file7 << "Time\trow\tcol\tgenomesize" << endl;
   for(int row = 1; row<=nrow;row++)
   {
   for(int col=1;col<=ncol;col++)
@@ -248,6 +269,7 @@ void Dump_Grids(TYPE2 **vibrios, TYPE2 **dna)
           file3 << Time << "\t" << row << "\t" << col << "\t" << vibrios[row][col].val << endl;
           file4 << Time << "\t" << row << "\t" << col << "\t" << avg_mob << endl;
           file5 << Time << "\t" << row << "\t" << col << "\t" << dna[row][col].DNA->Fragments->size() << endl;
+          file7 << Time << "\t" << row << "\t" << col << "\t" << vibrios[row][col].G->StringOfPearls->size() << endl;
         }
         int nr_tra_ext = 0;
         int nr_pearls = 0;

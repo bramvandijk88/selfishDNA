@@ -41,7 +41,7 @@ void InitialiseGenomes(TYPE2** vibrios, int init_nr_coregenes, int init_nr_nones
 				vibrios[row][col].G = new Genome();				
 				if(row>nrow/2-5 && row < nrow/2+5 && col > ncol/2-5 && col < ncol/2+5)
 				{
-					vibrios[row][col].G->GenerateGenome(init_nr_coregenes, init_nr_noness,  init_nr_noncoding, 1, gene_cost, transp_cost, genome_size_cost, init_mob, fitness_effect_noness);
+					vibrios[row][col].G->GenerateGenome(init_nr_coregenes, init_nr_noness,  init_nr_noncoding, 0, gene_cost, transp_cost, genome_size_cost, init_mob, fitness_effect_noness);
 				}
 				else 
 					vibrios[row][col].G->GenerateGenome(init_nr_coregenes, init_nr_noness,  init_nr_noncoding, 0, gene_cost, transp_cost, genome_size_cost, init_mob, fitness_effect_noness);
@@ -169,16 +169,12 @@ void DoHGT(TYPE2 **vibrios, TYPE2** DNA)
 								cout << "Fragment inserted:" << endl;
 								cout << vibrios[row][col].G->ListContent(&(*frits)) << endl; 
 							}								
-							//if(transposase) mutated = vibrios[row][col].G->IntegrateDNA(*frits, total_nr_args, 0, frits->size()-1,true,true,true,break_chance); 	
 							if(transposase) mutated = vibrios[row][col].G->TransposonDynamics(&(*frits),1.0,break_chance); 	// Rate mult = 1.0 since it is already taken up by the cell 
 							frag_new << vibrios[row][col].G->ListContent(&(*frits),FALSE,FALSE,TRUE) << endl;
-							//else cout << "Not integrating because no transposon" << endl;
 							if(V)cout << "Did it integrate? --> " << mutated << endl;
 							
-							//if(mutated) V = TRUE;																
 								
-							//DNA[row][col].DNA->Fragments->erase(frits);
-							frits = DNA[row][col].DNA->DeleteFragment(frits);
+							// frits = DNA[row][col].DNA->DeleteFragment(frits);
 							if (DNA[row][col].DNA->Fragments->size() == 0) break;
 							if(mutated) 
 							{			
@@ -187,7 +183,7 @@ void DoHGT(TYPE2 **vibrios, TYPE2** DNA)
 									if(V)cout << "OLD: " << old.str() << endl;
 									if(V)cout << "frag_old: " << frag_old.str() << endl;
 									if(V)cout << "frag_new: " << frag_new.str() << endl;
-									if(V)cout << "NEW: " << vibrios[row][col].G->ListContent(NULL,FALSE,FALSE,FALSE) << endl << endl<< endl;	
+									if(V)cout << "NEW: " << vibrios[row][col].G->ListContent(NULL,FALSE,FALSE,FALSE) << endl << endl<< endl;									
 									vibrios[row][col].G->Create_Gene_Lists();
 									vibrios[row][col].G->transformant = 3;
 									V = false;
@@ -254,10 +250,10 @@ void AncestorTrace(TYPE2 ** vibrios)
 	{
 		for (int col=1; col <= ncol; col++)
 		{
-			if(vibrios[row][col].val > 1)						// Val 1 are the cells that died last update
+			if(vibrios[row][col].val > 0)						// Val 1 are the cells that died last update
 			{
-				bool save = genrand_real1()<0.05; 				// Only trace one in every 20 cells to save diskspace. 
-				if(num>100) save = FALSE;
+				bool save = vibrios[row][col].val==1; 				// Only trace one in every 20 cells to save diskspace. 
+				//if(num>100) save = FALSE;
 				Not_extinct.insert(vibrios[row][col].G);
 				Genome* anc = vibrios[row][col].G->parent;
 				while(anc != NULL)
@@ -265,10 +261,11 @@ void AncestorTrace(TYPE2 ** vibrios)
 					Not_extinct.insert(anc);
 					if(save) {
 						file << row << "\t" << col << "\t" << anc->GenomeAtBirth << "\t" << anc->generation_ << "\t" << anc->HKgenes.size() << "\t" << anc->transposases.size() << "\t" << anc->nonessential.size() << "\t" << anc->rowcoltime << "\t" << num << endl;											
+						num++;
 					}
 					anc = anc->parent;					
 				}
-				num++;
+				
 			}
 		}
 	}
@@ -294,7 +291,7 @@ void AncestorTrace(TYPE2 ** vibrios)
 void CompeteAndReproduce(TYPE2 **vibrios, int row, int col)
 {
 
-	bool V = FALSE;
+	bool V = false;
 
 	TYPE2* competitor;												// Placeholder for invading cell
 	TYPE2* mate;													// Placeholder for mate cell (sexual repr only)
@@ -324,7 +321,8 @@ void CompeteAndReproduce(TYPE2 **vibrios, int row, int col)
 					{
 						double rand2 = genrand_real1();									// Roulette wheel number
 						double pinvade2 = 0.0;
-						if(V) cout << "rand is " << rand << endl;
+						if(V) cout << "rand2 is " << rand2 << endl;
+						bool matefound = false;
 						for(int q=1;q<9;q++)										// Scanning for mating partnerr
 						{
 							mate = GetNeighborP(vibrios,row,col,q);			// Store neightbour i in temporary placeholder
@@ -332,9 +330,13 @@ void CompeteAndReproduce(TYPE2 **vibrios, int row, int col)
 							{
 								pinvade2 += (mate->G->compstrength)/(fitsum-birthNON);
 								if(V) cout << "pinvade 2 for mate " << q << " is " << pinvade2 << endl;
-								if(rand2 <= pinvade2) break;
+								if(rand2 <= pinvade2){
+									matefound = true;
+									break;
+								} 
 							}
 						}
+						if(!matefound) mate = GetNeighborP(vibrios,row,col,0); // Use yourself if no mate fit mate is found (rare)
 						if(V)cout << "Picked mate: " << mate->G->ListContent(NULL) << endl;
 					}
 
@@ -363,7 +365,10 @@ void CompeteAndReproduce(TYPE2 **vibrios, int row, int col)
 					// 	vibrios[row][col].G->CalculateCompStrength();
 					// }
 
-					if(mutated || integrated || sex) vibrios[row][col].G->Create_Gene_Lists();
+					if(mutated || integrated || sex) {
+						vibrios[row][col].G->Create_Gene_Lists();
+						if(vibrios[row][col].G->transposases.size() == 0) vibrios[row][col].G->time_infected_=0;
+					}
 
 					if(mutated || integrated || sex) vibrios[row][col].G->CalculateCompStrength();
 					else

@@ -3,22 +3,22 @@ initial_density                 1.00          # Percentage of gridpoints filled 
 
 init_nr_HKgenes                 10           #                       # Nr of hk genes at initialisation AND needed. E.g. if 5, HK1, HK2, HK3, HK4, and HK5 are needed for the cell to replicate.
 init_nr_noness                  0
-fitness_effect_noness           0.0
-init_nr_noncoding               30
-init_mob                        0.95                                   # Mobility of initial transposons (if enabled)
-fieldsize                       50          #250
+fitness_effect_noness           0.00
+init_nr_noncoding               20
+init_mob                        0.9                                   # Mobility of initial transposons (if enabled)
+fieldsize                       150          #250
 seed 				            57
 
 # BIRTH/DEATH AND FITNESS STUFF
 birth                           1.0             #1.0                   #
-birthNON                        80              #20                    # Scaling the chance that nothing happens during competition (no reproduction). The higher this number, the more the simulation approximates continuous time. 
+birthNON                        100              #20                    # Scaling the chance that nothing happens during competition (no reproduction). The higher this number, the more the simulation approximates continuous time. 
 death                           0.02            #0.05                  #
 gene_cost                       0.00           #0.05/0.03              # Gene costs for expressed genes (house-keeping)
 genome_size_cost                0.000                                  # OPTIONAL Costs per pearl for total genome size [includes non-coding]
 
 # MUTATION RATES
 mut_rate_scaling                1.0         #1.0
-gene_mob                        0.05        #0.01                      # mutation rate of gene mob
+gene_mob                        0.01        #0.01                      # mutation rate of gene mob
 gene_loss                       0.001       #0.001
 gene_dupl                       0.001		#0.001
 tandem_dupl                     0.001
@@ -26,7 +26,7 @@ tandem_del                      0.001
 inversions                      0.001       #0.0005
 gene_to_noncoding               0.001		#0.001
 noncoding_to_gene               0.0000	    #0.000005
-gene_discovery                  0.01	    #0.00005
+gene_discovery                  0.00	    #0.00005
 
 # eDNA PLANE THINGS
 

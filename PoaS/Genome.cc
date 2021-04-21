@@ -124,6 +124,7 @@ void Genome::GenerateGenome(int init_nr_hkgenes, int init_nr_noness, int init_nr
 	GenomeAtBirth = ListContentShort(NULL);
 //	sleep(1);
 	generation_ = 1;
+	time_infected_ = 0;
 }
 
 void Genome::CloneGenome(Genome *parent_genome)
@@ -148,6 +149,7 @@ void Genome::CloneGenome(Genome *parent_genome)
 	fitness_effect_noness=parent_genome->fitness_effect_noness;
 	extra_death=parent_genome->extra_death;
 	compstrength=parent_genome->compstrength;
+	time_infected_=parent_genome->time_infected_;
 	transformant=0;	
 	generation_++;
 }
@@ -170,6 +172,7 @@ void Genome::RecombineGenomes(Genome *parent_genome, Genome *parent_genome2)
 	fitness_effect_noness=parent_genome->fitness_effect_noness;
 	extra_death=parent_genome->extra_death;
 	compstrength=parent_genome->compstrength;
+	time_infected_=parent_genome->time_infected_;
 	transformant=0;	
 	generation_++;
 }
@@ -303,6 +306,7 @@ void Genome::CalculateCompStrength()
 				// compstrength = 1.0;
 				compstrength -= (StringOfPearls->size()*genome_size_cost_);
 				if(V) cout << "Fitness l furthermore " << (StringOfPearls->size()*genome_size_cost_)  << endl;
+				if(StringOfPearls->size()>1000) compstrength = 0.0;
 				compstrength = max(compstrength,0.0);
 				
 			}
@@ -446,7 +450,8 @@ bool Genome::TransposonDynamics(list<Pearl*> *StringOfPearls_scanned,float rate_
 		if(IsTransposase(*i))
 		{							
 			double mobility = GetPearlMobility(*i);
-			if(genrand_real1() < pow(mobility,2)*rate)
+			//if(genrand_real1() < pow(mobility,2)*rate)
+			if(genrand_real1() < mobility*rate)
 			{
 				num_jumps++;
 				pearl=(*i);

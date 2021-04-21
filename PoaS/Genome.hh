@@ -20,6 +20,7 @@ class Genome
 		typedef std::list<Pearl*>::iterator rev_iter;
 
 		int generation_;
+		int time_infected_;
 		int genomesize_;
 		string rowcoltime;
 		string GenomeAtBirth;		
