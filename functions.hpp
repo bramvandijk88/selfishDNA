@@ -41,7 +41,7 @@ void InitialiseGenomes(TYPE2** vibrios, int init_nr_coregenes, int init_nr_nones
 				vibrios[row][col].G = new Genome();				
 				if(row>nrow/2-5 && row < nrow/2+5 && col > ncol/2-5 && col < ncol/2+5)
 				{
-					vibrios[row][col].G->GenerateGenome(init_nr_coregenes, init_nr_noness,  init_nr_noncoding, 0, gene_cost, transp_cost, genome_size_cost, init_mob, fitness_effect_noness);
+					vibrios[row][col].G->GenerateGenome(init_nr_coregenes, init_nr_noness,  init_nr_noncoding, 1, gene_cost, transp_cost, genome_size_cost, init_mob, fitness_effect_noness);
 				}
 				else 
 					vibrios[row][col].G->GenerateGenome(init_nr_coregenes, init_nr_noness,  init_nr_noncoding, 0, gene_cost, transp_cost, genome_size_cost, init_mob, fitness_effect_noness);
@@ -349,7 +349,8 @@ void CompeteAndReproduce(TYPE2 **vibrios, int row, int col)
 					else vibrios[row][col].G->CloneGenome(competitor->G);
 					double gendisc = gene_discovery;
 					if(Time < start_sge_influx || Time > stop_sge_influx) gendisc = 0.0;
-					bool mutated = vibrios[row][col].G->MutateGenome(gene_mob, gene_loss, gene_dupl,
+					bool mutated=false;
+					if(Time < 80000) mutated = vibrios[row][col].G->MutateGenome(gene_mob, gene_loss, gene_dupl,
 																	 tandem_dupl, tandem_del, inversions,
 																	gene_to_noncoding, noncoding_to_gene, gendisc); // LS: why ' mutated' in Genome.cc but 'mutate' here
 

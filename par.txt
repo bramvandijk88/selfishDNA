@@ -2,8 +2,8 @@
 initial_density                 1.00          # Percentage of gridpoints filled at start
 
 init_nr_HKgenes                 10           #                       # Nr of hk genes at initialisation AND needed. E.g. if 5, HK1, HK2, HK3, HK4, and HK5 are needed for the cell to replicate.
-init_nr_noness                  0
-fitness_effect_noness           0.00
+init_nr_noness                  10
+fitness_effect_noness           0.10
 init_nr_noncoding               20
 init_mob                        0.9                                   # Mobility of initial transposons (if enabled)
 fieldsize                       150          #250

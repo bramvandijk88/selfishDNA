@@ -81,7 +81,6 @@ void Initial(void)
 		readOut = (char*)argv_g[i];
 		if(readOut == "-Size") {fieldsize = atoi(argv_g[i+1]); cmd_fieldsize = true;}
 		if(readOut == "-Scale") {myscale = atoi(argv_g[i+1]);}
-
 		if(readOut == "-Diff") {genediffusion = atof(argv_g[i+1]); cmd_eDNAdiffusion = true;}
 		if(readOut == "-Jumprate") {jumprate = atof(argv_g[i+1]);}
 		if(readOut == "-Sexual") {sexual = true;}
@@ -324,7 +323,7 @@ void Update(void)
 	AgeGenes(Vibrios);
 	if(mixgrid) PerfectMix(Vibrios);
 	if(mix) PerfectMix(DNA);
-	if(Time>100000) dohgt=false;
+	// if(Time>100000) dohgt=false;
 	if(Time%displayinterval==0)
 	{
 		for(int row=1; row<=nrow; row++)
