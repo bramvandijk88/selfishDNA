@@ -27,7 +27,7 @@ OBJPOAS = $(POAS)/Genome.o $(POAS)/Pearl.o $(POAS)/HK.o $(POAS)/NonEss.o $(POAS)
 OBJCASH2 = $(BREM_CASH)cash2.o $(BREM_CASH)mersenne.o
 OBJMAIN = $(BREM_CASH)cash2-s.o
 
-MYOBJ=vibrio.cpp clibs.hpp functions.hpp functions_data.hpp gotmouse.cpp
+MYOBJ=selfish.cpp clibs.hpp functions.hpp functions_data.hpp gotmouse.cpp
 
 LDIR = -L/usr/X11R6/lib
 LIBS = -lpng -lz -lX11 -lm -lgrace_np -lm
@@ -35,17 +35,17 @@ LIBS = -lpng -lz -lX11 -lm -lgrace_np -lm
 BREM_CASH = Brem-cash/
 POAS = PoaS/
 
-OBJVIB = vibrio.o
+OBJVIB = selfish.o
 
-all: vibrio
+all: selfish
 
 rule: dependencies
 	command
 	other command
 	@silent command
 
-vibrio.o:  ${MYOBJ}
-	$(CPP) $(PPOPT) -c vibrio.cpp
+selfish.o:  ${MYOBJ}
+	$(CPP) $(PPOPT) -c selfish.cpp
 
 $(BREM_CASH)%.o: $(BREM_CASH)%.c
 	$(CC) $(CCOPT) -o $@ $<
@@ -61,8 +61,8 @@ $(OBJCASH2): $(BREM_CASH)cash2.hpp $(BREM_CASH)mersenne.h
 $(OBJMAIN): $(BREM_CASH)cash2003.h $(BREM_CASH)cash2.hpp $(BREM_CASH)mersenne.h $(BREM_CASH)cash2-s.hpp
 
 
-vibrio: $(OBJCASH) $(OBJCASH2) $(OBJMAIN) $(OBJVIB) $(OBJPOAS)
+selfish: $(OBJCASH) $(OBJCASH2) $(OBJMAIN) $(OBJVIB) $(OBJPOAS)
 	$(CPP) $(PPOPT)  $(OBJVIB) $(OBJCASH) $(OBJCASH2) $(OBJMAIN) $(OBJPOAS) -o SelfishDNA \
 	  -lm  -lc -lpng -lz -lX11 -lgrace_np -lcurses
 
-.PHONY: vibrio.cpp
+.PHONY: selfish.cpp
