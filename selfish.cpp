@@ -53,18 +53,18 @@ bool mixgrid = false;
 bool dohgt = true;
 bool dojump = true;
 bool sexual = false;
-float jumprate = 0.1;
-float uptakerate = 0.1;
-float transp_cost = 0.0;
-float break_chance = 0.0;
+float jumprate = 0.1;			//j
+float uptakerate = 0.1;			//u
+float transp_cost = 0.0;		//c
+float break_chance = 0.0;		//b
 
-int start_sge_influx = 0;
+int start_sge_influx = 0;		
 double sge_influx = 0.0;
 int stop_sge_influx = 0;
 
 set<Genome*> Ancestors;
 
-int dna_diff = 2;
+int dna_diff = 2;				
 
 void Initial(void)
 {
@@ -79,18 +79,18 @@ void Initial(void)
 	for(int i = 0; i < (int)argc_g; i++)
 	{
 		readOut = (char*)argv_g[i];
-		if(readOut == "-Size") {fieldsize = atoi(argv_g[i+1]); cmd_fieldsize = true;}
-		if(readOut == "-Scale") {myscale = atoi(argv_g[i+1]);}
-		if(readOut == "-Diff") {genediffusion = atof(argv_g[i+1]); cmd_eDNAdiffusion = true;}
-		if(readOut == "-Jumprate") {jumprate = atof(argv_g[i+1]);}
-		if(readOut == "-Sexual") {sexual = true;}
-		if(readOut == "-Cost") {transp_cost = atof(argv_g[i+1]);}		
-		if(readOut == "-BreakChance") {break_chance = atof(argv_g[i+1]);}
-		if(readOut == "-Uptakerate") {uptakerate = atof(argv_g[i+1]);}
-		if(readOut == "-startInTra") {start_sge_influx = atoi(argv_g[i+1]);}
+		if(readOut == "-Size") {fieldsize = atoi(argv_g[i+1]); cmd_fieldsize = true;}			//W,H
+		if(readOut == "-Scale") {myscale = atoi(argv_g[i+1]);}						
+		if(readOut == "-Diff") {genediffusion = atof(argv_g[i+1]); cmd_eDNAdiffusion = true;}	//D
+		if(readOut == "-Jumprate") {jumprate = atof(argv_g[i+1]);}								//j	
+		if(readOut == "-Sexual") {sexual = true;}		
+		if(readOut == "-Cost") {transp_cost = atof(argv_g[i+1]);}								//c
+		if(readOut == "-BreakChance") {break_chance = atof(argv_g[i+1]);}						//b
+		if(readOut == "-Uptakerate") {uptakerate = atof(argv_g[i+1]);}							//u
+		if(readOut == "-startInTra") {start_sge_influx = atoi(argv_g[i+1]);}				
 		if(readOut == "-stopInTra") {stop_sge_influx = atoi(argv_g[i+1]);}
 		if(readOut == "-rateInTra") {sge_influx = atof(argv_g[i+1]);}
-		if(readOut == "-MixDNA") {mix = true; }
+		if(readOut == "-MixDNA") {mix = true; }	
 		if(readOut == "-MixPop") {mixgrid = true; }
 		if(readOut == "-noHGT") {dohgt = false; }
 		if(readOut == "-noJump") {dojump = false; }
@@ -195,14 +195,20 @@ void Initial(void)
 	{
 		readOut = (char*)argv_g[i];
 		file << readOut << " ";
-		if(readOut == "-Seed") {myseed = atoi(argv_g[i+1]);}
-		if(readOut == "-Disco") {gene_discovery = atof(argv_g[i+1]);}
-		if(readOut == "-Phi") {init_mob = atof(argv_g[i+1]);}	
-		if(readOut == "-Noncoding") {init_nr_noncoding = atoi(argv_g[i+1]);}	
+		if(readOut == "-Seed") {myseed = atoi(argv_g[i+1]);}										//s
+		if(readOut == "-Disco") {gene_discovery = atof(argv_g[i+1]);}								
+		if(readOut == "-Phi") {init_mob = atof(argv_g[i+1]);}										//init value of phi
+		if(readOut == "-Noncoding") {init_nr_noncoding = atoi(argv_g[i+1]);}						
 		if(readOut == "-HK") {init_nr_HKgenes = atoi(argv_g[i+1]);}	
 		if(readOut == "-MaxTime") {MaxTime = atoi(argv_g[i+1]);}	
-		if(readOut == "-Phi") {init_mob = atof(argv_g[i+1]);}	
-		if(readOut == "-Non") {birthNON = atof(argv_g[i+1]);}
+		if(readOut == "-Non") {birthNON = atof(argv_g[i+1]);}			
+		if(readOut == "-Del") { gene_loss = atof(argv_g[i+1]); }									//mutations
+                if(readOut == "-Dup") { gene_dupl = atof(argv_g[i+1]); }
+                if(readOut == "-TDel") {tandem_del = atof(argv_g[i+1]); }
+                if(readOut == "-TDup") {tandem_dupl = atof(argv_g[i+1]); }
+                if(readOut == "-Noness") {init_nr_noness = atoi(argv_g[i+1]); }
+                if(readOut == "-Noness_eff") {fitness_effect_noness = atof(argv_g[i+1]); }
+
 	}
 	file.close();
 	// Code below takes seed from the parameter file, or chooses time as a seed if this parameter file contains a 0 as seed (this seed is written to a file named seed.txt)

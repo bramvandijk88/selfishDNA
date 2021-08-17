@@ -14,7 +14,7 @@ birth                           1.0             #1.0                   #
 birthNON                        100              #20                    # Scaling the chance that nothing happens during competition (no reproduction). The higher this number, the more the simulation approximates continuous time. 
 death                           0.02            #0.05                  #
 gene_cost                       0.00           #0.05/0.03              # Gene costs for expressed genes (house-keeping)
-genome_size_cost                0.000                                  # OPTIONAL Costs per pearl for total genome size [includes non-coding]
+genome_size_cost                0.001                                  # OPTIONAL Costs per pearl for total genome size [includes non-coding]
 
 # MUTATION RATES
 mut_rate_scaling                1.0         #1.0
